@@ -76,37 +76,39 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, apiUrl }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-success/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-success/10 flex items-center justify-center p-3 sm:p-4">
       <Card className="w-full max-w-md animate-fade-in">
-        <CardHeader className="text-center">
-          <Icon name="Video" size={48} className="mx-auto mb-4 text-primary" />
-          <CardTitle className="text-2xl font-bold">
+        <CardHeader className="text-center pb-4 sm:pb-6">
+          <Icon name="Video" size={40} className="mx-auto mb-3 sm:mb-4 text-primary sm:size-12" />
+          <CardTitle className="text-xl sm:text-2xl font-bold">
             {isLogin ? 'Вход в систему' : 'Регистрация'}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
+        <CardContent className="px-4 sm:px-6">
+          <form onSubmit={handleAuth} className="space-y-3 sm:space-y-4">
             {!isLogin && (
               <div>
-                <Label htmlFor="name">Имя</Label>
+                <Label htmlFor="name" className="text-sm sm:text-base">Имя</Label>
                 <Input
                   id="name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Введите ваше имя"
+                  className="text-sm sm:text-base h-10 sm:h-11"
                   required={!isLogin}
                 />
               </div>
             )}
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@mail.com"
+                className="text-sm sm:text-base h-10 sm:h-11"
                 required
               />
             </div>
