@@ -145,7 +145,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
           
           const cleanUserName = userName.replace(/[^a-zA-Z0-9]/g, '_');
           const cleanTitle = leadTitle.replace(/[^a-zA-Z0-9]/g, '_');
-          link.download = `${cleanUserName}_${cleanTitle}_${leadId}.webm`;
+          link.download = `${cleanUserName}_${cleanTitle}_${leadId}.mp4`;
           
           document.body.appendChild(link);
           link.click();

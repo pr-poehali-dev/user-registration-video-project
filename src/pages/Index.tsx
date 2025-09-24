@@ -140,8 +140,8 @@ const Index = () => {
             title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
             comments: comments,
             video_data: base64Video,
-            video_filename: 'recording.webm',
-            video_content_type: 'video/webm'
+            video_filename: 'recording.mp4',
+            video_content_type: 'video/mp4'
           })
         });
 

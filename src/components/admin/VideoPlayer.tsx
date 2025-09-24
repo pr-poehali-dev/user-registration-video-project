@@ -40,26 +40,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
     // Проверяем поддержку разных форматов
     const video = document.createElement('video');
     
-    // Определяем формат видео по URL или MIME-типу
+    // Определяем формат видео по URL или MIME-типу - теперь только MP4
     const isMP4Video = videoUrl.includes('mp4') || videoUrl.includes('avc') || videoUrl.includes('h264');
-    const isWebMVideo = videoUrl.includes('webm');
+    const isWebMVideo = videoUrl.includes('webm'); // Устаревший формат
     
     // Проверим поддержку форматов
     const canPlayMP4 = video.canPlayType('video/mp4') !== '';
     const canPlayWebM = video.canPlayType('video/webm') !== '';
     
-    // Для iOS: MP4 работает отлично, WebM - ограниченно
+    // Для iOS: Поддерживаем только MP4, WebM блокируем
     if (isIOS) {
-      if (isWebMVideo && !canPlayWebM) {
+      if (isWebMVideo) {
         setIsSupported(false);
         toast({
-          title: '📱 Старый формат',
-          description: 'Это WebM видео. Новые записи в MP4 будут работать лучше.',
-          variant: 'default'
+          title: '🚫 Устаревший формат',
+          description: 'WebM больше не поддерживается. Все новые записи создаются в MP4.',
+          variant: 'destructive'
         });
         return;
       }
-      // MP4 должен работать на всех iOS
+      // MP4 должен работать на всех iOS отлично
     }
     
     // For Android Chrome - should work fine
@@ -68,17 +68,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
       return;
     }
     
-    // For desktop Safari
+    // For desktop Safari - блокируем WebM полностью
     if (isSafari && !isMobile) {
-      const video = document.createElement('video');
-      const canPlayWebM = video.canPlayType('video/webm') !== '';
-      
-      if (!canPlayWebM) {
+      if (isWebMVideo) {
         setIsSupported(false);
         toast({
-          title: 'Safari браузер',
-          description: 'WebM может не поддерживаться в этой версии Safari. Рекомендуем скачать видео.',
-          variant: 'default'
+          title: '🚫 Формат не поддерживается',
+          description: 'WebM формат заблокирован. Система теперь записывает только в MP4.',
+          variant: 'destructive'
         });
         return;
       }
@@ -100,9 +97,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
       const link = document.createElement('a');
       link.href = blobUrl;
       
-      // Clean filename for download
+      // Clean filename for download - всегда используем .mp4
       const cleanTitle = leadTitle.replace(/[^a-zA-Z0-9]/g, '_');
-      link.download = `video_${cleanTitle}.webm`;
+      link.download = `video_${cleanTitle}.mp4`;
       
       document.body.appendChild(link);
       link.click();
@@ -137,7 +134,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
               📱 Просмотр на iPhone/iPad
             </p>
             <p className="text-sm text-muted-foreground mb-4">
-              Скачайте видео для просмотра в стандартном плеере iOS с лучшим качеством.
+              Это устаревшее WebM видео. Новые записи создаются в MP4 для лучшей совместимости.
             </p>
           </>
         )}
@@ -147,7 +144,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
               🌐 Safari браузер
             </p>
             <p className="text-sm text-muted-foreground mb-4">
-              WebM формат может не поддерживаться. Скачайте видео или откройте в Chrome.
+              WebM формат больше не используется. Система теперь записывает только в MP4.
             </p>
           </>
         )}
@@ -201,9 +198,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
           });
         }}
       >
-        {/* Поддержка разных форматов - MP4 приоритетнее для совместимости */}
+        {/* Поддерживаем только MP4 формат */}
         <source src={videoUrl} type="video/mp4" />
-        <source src={videoUrl} type="video/webm" />
         <p className="text-sm text-muted-foreground">
           Ваш браузер не поддерживает воспроизведение видео.
         </p>

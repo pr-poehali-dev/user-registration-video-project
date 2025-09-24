@@ -43,10 +43,27 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
         videoRef.current.srcObject = stream;
       }
 
-      const mediaRecorder = new MediaRecorder(stream, {
+      // Принудительно проверяем поддержку MP4 и используем только его
+      let options: MediaRecorderOptions = {
         videoBitsPerSecond: 300000,
         audioBitsPerSecond: 32000
-      });
+      };
+      
+      // Проверяем поддержку H.264/MP4 кодека
+      if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.424028, mp4a.40.2"')) {
+        options.mimeType = 'video/mp4; codecs="avc1.424028, mp4a.40.2"';
+      } else if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E, mp4a.40.2"')) {
+        options.mimeType = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+      } else if (MediaRecorder.isTypeSupported('video/mp4; codecs=h264')) {
+        options.mimeType = 'video/mp4; codecs=h264';
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        options.mimeType = 'video/mp4';
+      } else {
+        // Если MP4 не поддерживается, показываем ошибку
+        throw new Error('Браузер не поддерживает запись в формате MP4');
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
       
       const chunks: BlobPart[] = [];
@@ -57,7 +74,9 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        // Создаем blob с правильным MIME-типом MP4
+        const mimeType = options.mimeType || 'video/mp4';
+        const blob = new Blob(chunks, { type: mimeType });
         setVideoBlob(blob);
         const url = URL.createObjectURL(blob);
         setVideoUrl(url);
@@ -70,8 +89,14 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       mediaRecorder.start();
       setIsRecording(true);
       toast({ title: 'Запись началась', description: 'Записываем видео с задней камеры' });
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось получить доступ к камере', variant: 'destructive' });
+    } catch (error: any) {
+      let errorMessage = 'Не удалось получить доступ к камере';
+      
+      if (error.message && error.message.includes('MP4')) {
+        errorMessage = 'Ваш браузер не поддерживает запись в формате MP4. Попробуйте использовать Chrome или Safari';
+      }
+      
+      toast({ title: 'Ошибка', description: errorMessage, variant: 'destructive' });
     }
   };
 
