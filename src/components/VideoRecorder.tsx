@@ -132,6 +132,13 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       clearInterval(progressInterval);
       setUploadProgress(100);
       
+      // Show success message with checkmark
+      toast({ 
+        title: '✅ Лид успешно отправлен', 
+        description: 'Видео и комментарии сохранены в системе',
+        duration: 3000
+      });
+      
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);

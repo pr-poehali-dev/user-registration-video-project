@@ -148,11 +148,10 @@ const Index = () => {
         const data = await response.json();
         
         if (response.ok && data.success) {
-          toast({ title: 'Лид сохранен!', description: 'Видео и комментарии добавлены в архив' });
-          
           // Reload leads
           await loadUserLeads(token);
-          setActiveTab('archive');
+          
+          // Stay on record tab - don't switch to archive
         } else {
           toast({ 
             title: 'Ошибка сохранения', 
