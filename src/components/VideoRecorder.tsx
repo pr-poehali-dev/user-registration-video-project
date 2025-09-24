@@ -26,11 +26,14 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 360 },
-          frameRate: { ideal: 30 }
+          width: { ideal: 320, max: 320 },
+          height: { ideal: 240, max: 240 },
+          frameRate: { ideal: 15, max: 15 }
         },
-        audio: true
+        audio: {
+          sampleRate: 22050,
+          channelCount: 1
+        }
       });
       
       streamRef.current = stream;
@@ -39,7 +42,8 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       }
 
       const mediaRecorder = new MediaRecorder(stream, {
-        videoBitsPerSecond: 2500000
+        videoBitsPerSecond: 300000,
+        audioBitsPerSecond: 32000
       });
       mediaRecorderRef.current = mediaRecorder;
       
