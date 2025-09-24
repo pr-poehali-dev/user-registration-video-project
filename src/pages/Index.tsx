@@ -130,6 +130,20 @@ const Index = () => {
       reader.onloadend = async () => {
         const base64Video = (reader.result as string).split(',')[1]; // Remove data URL prefix
         
+        // Определяем формат по MIME-типу blob'a
+        const isMP4 = videoBlob.type.includes('mp4') || videoBlob.type.includes('avc');
+        const isWebM = videoBlob.type.includes('webm');
+        
+        let filename = 'recording.mp4'; // По умолчанию MP4
+        let contentType = 'video/mp4';
+        
+        if (isWebM) {
+          filename = 'recording.webm';
+          contentType = 'video/webm';
+        }
+        
+        console.log(`Отправляем видео: ${contentType}, размер: ${(videoBlob.size / 1024 / 1024).toFixed(2)} MB`);
+        
         const response = await fetch(API_URLS.leads, {
           method: 'POST',
           headers: {
@@ -140,22 +154,29 @@ const Index = () => {
             title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
             comments: comments,
             video_data: base64Video,
-            video_filename: 'recording.webm',
-            video_content_type: 'video/webm'
+            video_filename: filename,
+            video_content_type: contentType
           })
         });
 
         const data = await response.json();
         
+        console.log('Response status:', response.status);
+        console.log('Response data:', data);
+        
         if (response.ok && data.success) {
           // Reload leads
           await loadUserLeads(token);
           
-          // Stay on record tab - don't switch to archive
+          toast({ 
+            title: '✅ Лид сохранен', 
+            description: `Видео запись успешно отправлена (${contentType})`, 
+          });
         } else {
+          console.error('Failed to save lead:', response.status, data);
           toast({ 
             title: 'Ошибка сохранения', 
-            description: data.error || 'Не удалось сохранить лид', 
+            description: data.error || `HTTP ${response.status}: Не удалось сохранить лид`, 
             variant: 'destructive' 
           });
         }

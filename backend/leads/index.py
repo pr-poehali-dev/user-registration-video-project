@@ -103,6 +103,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             video_filename = body_data.get('video_filename', 'recording.webm')
             video_content_type = body_data.get('video_content_type', 'video/webm')
             
+            print(f"Receiving lead: title='{title[:50]}...', comments_len={len(comments)}, video_len={len(video_base64)}, content_type='{video_content_type}', filename='{video_filename}'")
+            
             if not title or not comments or not video_base64:
                 return {
                     'statusCode': 400,
@@ -114,24 +116,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Decode base64 video data
             try:
                 video_data = base64.b64decode(video_base64)
-            except:
+                print(f"Video decoded successfully, size: {len(video_data)} bytes ({len(video_data)/1024/1024:.2f} MB)")
+            except Exception as e:
+                print(f"Error decoding video data: {e}")
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Invalid video data'})
+                    'body': json.dumps({'error': f'Invalid video data: {str(e)}'})
                 }
             
             # Save to database
-            cursor.execute("""
-                INSERT INTO video_leads 
-                (user_id, title, comments, video_data, video_filename, video_content_type)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING id, created_at
-            """, (user_id, title, comments, video_data, video_filename, video_content_type))
-            
-            lead_id, created_at = cursor.fetchone()
-            conn.commit()
+            try:
+                cursor.execute("""
+                    INSERT INTO video_leads 
+                    (user_id, title, comments, video_data, video_filename, video_content_type)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING id, created_at
+                """, (user_id, title, comments, video_data, video_filename, video_content_type))
+                
+                lead_id, created_at = cursor.fetchone()
+                conn.commit()
+                print(f"Lead saved successfully: id={lead_id}, created_at={created_at}")
+            except Exception as e:
+                conn.rollback()
+                print(f"Database error: {e}")
+                return {
+                    'statusCode': 500,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': f'Database error: {str(e)}'})
+                }
             
             return {
                 'statusCode': 200,
