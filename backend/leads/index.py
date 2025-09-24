@@ -100,30 +100,73 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             title = body_data.get('title', '').strip()
             comments = body_data.get('comments', '').strip()
             video_base64 = body_data.get('video_data', '')  # Base64 encoded video
-            video_filename = body_data.get('video_filename', 'recording.webm')
-            video_content_type = body_data.get('video_content_type', 'video/webm')
+            video_filename = body_data.get('video_filename', 'recording.mp4')
+            video_content_type = body_data.get('video_content_type', 'video/mp4')
             
+            print(f"Raw request data keys: {list(body_data.keys())}")
+            print(f"Video data type: {type(video_base64)}, length: {len(video_base64) if video_base64 else 0}")
             print(f"Receiving lead: title='{title[:50]}...', comments_len={len(comments)}, video_len={len(video_base64)}, content_type='{video_content_type}', filename='{video_filename}'")
             
-            if not title or not comments or not video_base64:
+            if not title or not comments:
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Missing required fields'})
+                    'body': json.dumps({'error': 'Title and comments are required'})
                 }
+                
+            if not video_base64:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': 'Video data is required'})
+                }
+            
+            if len(video_base64) < 100:
+                print(f"WARNING: Video data too short: '{video_base64[:50]}...'")
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': f'Video data too short: {len(video_base64)} chars - possibly corrupted'})
+                }
+                
+            print(f"Video base64 first 100 chars: {video_base64[:100]}")
+            print(f"Video base64 last 20 chars: {video_base64[-20:]}")
             
             # Decode base64 video data
             try:
-                video_data = base64.b64decode(video_base64)
+                # Check for padding issues and try to fix them
+                video_base64_fixed = video_base64
+                
+                # Add padding if needed
+                missing_padding = len(video_base64_fixed) % 4
+                if missing_padding:
+                    video_base64_fixed += '=' * (4 - missing_padding)
+                    print(f"Added {4 - missing_padding} padding characters")
+                
+                video_data = base64.b64decode(video_base64_fixed)
                 print(f"Video decoded successfully, size: {len(video_data)} bytes ({len(video_data)/1024/1024:.2f} MB)")
+                
+                # Basic validation - check if it looks like video data
+                if len(video_data) < 1024:  # Less than 1KB is suspicious for video
+                    print(f"WARNING: Decoded video data is very small: {len(video_data)} bytes")
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'isBase64Encoded': False,
+                        'body': json.dumps({'error': f'Decoded video too small: {len(video_data)} bytes - probably corrupted'})
+                    }
+                    
             except Exception as e:
                 print(f"Error decoding video data: {e}")
+                print(f"Video base64 sample for debug: {video_base64[:200]}")
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': f'Invalid video data: {str(e)}'})
+                    'body': json.dumps({'error': f'Invalid video data: {str(e)} - check base64 encoding'})
                 }
             
             # Save to database
