@@ -29,7 +29,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
@@ -44,6 +44,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 401,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'isBase64Encoded': False,
             'body': json.dumps({'error': 'Authentication required'})
         }
     
@@ -52,6 +53,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 401,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'isBase64Encoded': False,
             'body': json.dumps({'error': 'Invalid token'})
         }
     
@@ -88,6 +90,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
                 'body': json.dumps({'leads': leads})
             }
         
@@ -104,6 +107,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
                     'body': json.dumps({'error': 'Missing required fields'})
                 }
             
@@ -114,6 +118,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
                     'body': json.dumps({'error': 'Invalid video data'})
                 }
             
@@ -131,6 +136,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
                 'body': json.dumps({
                     'success': True,
                     'lead_id': lead_id,
@@ -138,10 +144,57 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 })
             }
         
+        elif method == 'DELETE':
+            # Delete lead (admin only)
+            if user_data.get('role') != 'admin':
+                return {
+                    'statusCode': 403,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Admin access required'})
+                }
+            
+            # Get lead_id from query parameters
+            query_params = event.get('queryStringParameters') or {}
+            lead_id = query_params.get('lead_id')
+            
+            if not lead_id:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'lead_id parameter required'})
+                }
+            
+            # Check if lead exists
+            cursor.execute("SELECT id, user_id FROM video_leads WHERE id = %s", (lead_id,))
+            lead_info = cursor.fetchone()
+            
+            if not lead_info:
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Lead not found'})
+                }
+            
+            # Delete the lead
+            cursor.execute("DELETE FROM video_leads WHERE id = %s", (lead_id,))
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
+                'body': json.dumps({
+                    'success': True,
+                    'message': 'Lead deleted successfully',
+                    'deleted_lead_id': int(lead_id)
+                })
+            }
+        
         else:
             return {
                 'statusCode': 405,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
                 'body': json.dumps({'error': 'Method not allowed'})
             }
     
@@ -149,6 +202,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'isBase64Encoded': False,
             'body': json.dumps({'error': f'Server error: {str(e)}'})
         }
     

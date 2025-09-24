@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 
@@ -42,6 +43,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [loadingVideo, setLoadingVideo] = useState(false);
+  const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -175,6 +177,47 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
         description: 'Не удалось скачать видео',
         variant: 'destructive'
       });
+    }
+  };
+
+  const deleteLead = async (leadId: string, leadTitle: string) => {
+    setDeletingLeadId(leadId);
+    
+    try {
+      const leadsApiUrl = 'https://functions.poehali.dev/a119ce14-9a5b-40de-b18f-3ef1f6dc7484';
+      const response = await fetch(`${leadsApiUrl}?lead_id=${leadId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-Auth-Token': token
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success) {
+          toast({
+            title: '✅ Лид удален',
+            description: `Лид "${leadTitle}" успешно удален из системы`,
+          });
+          
+          // Reload admin data to refresh the UI
+          await loadAdminData();
+        } else {
+          throw new Error(data.error || 'Failed to delete lead');
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Network error');
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка удаления',
+        description: `Не удалось удалить лид: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+        variant: 'destructive'
+      });
+    } finally {
+      setDeletingLeadId(null);
     }
   };
 
@@ -373,31 +416,75 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
                               <p className="text-xs text-muted-foreground">
                                 {formatDate(lead.created_at)}
                               </p>
-                              {lead.has_video && (
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => loadVideo(lead.id)}
-                                    disabled={loadingVideo}
-                                  >
-                                    {loadingVideo ? (
-                                      <Icon name="Loader2" size={12} className="animate-spin mr-1" />
-                                    ) : (
-                                      <Icon name="Play" size={12} className="mr-1" />
-                                    )}
-                                    Смотреть
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    onClick={() => downloadVideo(lead.id, lead.title, selectedUser.name)}
-                                  >
-                                    <Icon name="Download" size={12} className="mr-1" />
-                                    Скачать
-                                  </Button>
-                                </div>
-                              )}
+                              <div className="flex gap-2">
+                                {lead.has_video && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => loadVideo(lead.id)}
+                                      disabled={loadingVideo}
+                                    >
+                                      {loadingVideo ? (
+                                        <Icon name="Loader2" size={12} className="animate-spin mr-1" />
+                                      ) : (
+                                        <Icon name="Play" size={12} className="mr-1" />
+                                      )}
+                                      Смотреть
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => downloadVideo(lead.id, lead.title, selectedUser.name)}
+                                    >
+                                      <Icon name="Download" size={12} className="mr-1" />
+                                      Скачать
+                                    </Button>
+                                  </>
+                                )}
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      disabled={deletingLeadId === lead.id}
+                                    >
+                                      {deletingLeadId === lead.id ? (
+                                        <Icon name="Loader2" size={12} className="animate-spin mr-1" />
+                                      ) : (
+                                        <Icon name="Trash2" size={12} className="mr-1" />
+                                      )}
+                                      Удалить
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                      <DialogTitle>Подтверждение удаления</DialogTitle>
+                                      <DialogDescription>
+                                        Вы действительно хотите удалить лид "{lead.title}"?
+                                        Это действие нельзя отменить.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="flex justify-end gap-2 mt-4">
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline">Отмена</Button>
+                                      </DialogTrigger>
+                                      <Button
+                                        variant="destructive"
+                                        onClick={() => deleteLead(lead.id, lead.title)}
+                                        disabled={deletingLeadId === lead.id}
+                                      >
+                                        {deletingLeadId === lead.id ? (
+                                          <Icon name="Loader2" size={12} className="animate-spin mr-1" />
+                                        ) : (
+                                          <Icon name="Trash2" size={12} className="mr-1" />
+                                        )}
+                                        Удалить навсегда
+                                      </Button>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
                             </div>
                           </div>
                         ))}

@@ -30,6 +30,22 @@
         "lead_id": "number"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Delete lead (admin only)",
+      "method": "DELETE",
+      "headers": {
+        "X-Auth-Token": "admin-jwt-token"
+      },
+      "queryParameters": {
+        "lead_id": "1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }
