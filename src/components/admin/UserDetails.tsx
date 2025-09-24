@@ -46,43 +46,38 @@ const UserDetails: React.FC<UserDetailsProps> = ({
 }) => {
   return (
     <Card>
-      <CardHeader className="pb-3 sm:pb-6">
-        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-          <Icon name="Eye" size={18} className="sm:size-5" />
-          <span className="truncate">
-            {selectedUser ? `Данные: ${selectedUser.name}` : 'Выберите пользователя'}
-          </span>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Icon name="Eye" size={20} />
+          {selectedUser ? `Данные: ${selectedUser.name}` : 'Выберите пользователя'}
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-3 sm:px-6">
+      <CardContent>
         {selectedUser ? (
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-4">
             <div>
-              <h4 className="font-medium mb-2 text-sm sm:text-base">Информация о пользователе:</h4>
-              <div className="text-xs sm:text-sm space-y-1">
-                <p><strong>Email:</strong> <span className="break-all">{selectedUser.email}</span></p>
+              <h4 className="font-medium mb-2">Информация о пользователе:</h4>
+              <div className="text-sm space-y-1">
+                <p><strong>Email:</strong> {selectedUser.email}</p>
                 <p><strong>Регистрация:</strong> {formatDate(selectedUser.created_at)}</p>
                 <p><strong>Лидов:</strong> {selectedUser.leads.length}</p>
               </div>
             </div>
 
             <div>
-              <h4 className="font-medium mb-2 text-sm sm:text-base">Лиды пользователя:</h4>
-              <div className="space-y-2 max-h-56 sm:max-h-64 overflow-y-auto">
+              <h4 className="font-medium mb-2">Лиды пользователя:</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
                 {selectedUser.leads.length > 0 ? (
                   <>
-                    <div className="flex gap-2 mb-3 sm:mb-4 p-2 sm:p-3 bg-muted/50 rounded-lg">
+                    <div className="flex gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-xs h-8 px-2 sm:h-9 sm:px-3"
                         onClick={() => onDownloadAllUserVideos(selectedUser)}
                         disabled={selectedUser.leads.filter(l => l.has_video).length === 0}
                       >
                         <Icon name="Download" size={12} className="mr-1" />
-                        <span className="hidden sm:inline">Скачать все видео</span>
-                        <span className="sm:hidden">Все видео</span>
-                        <span className="ml-1">({selectedUser.leads.filter(l => l.has_video).length})</span>
+                        Скачать все видео ({selectedUser.leads.filter(l => l.has_video).length})
                       </Button>
                     </div>
                     

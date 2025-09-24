@@ -236,32 +236,28 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-success/5">
       <AppHeader user={user} onLogout={handleLogout} />
 
-      <div className="container mx-auto px-4 py-4 sm:py-6 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
-            <TabsTrigger value="record" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
-              <Icon name="Video" size={16} className="hidden sm:block" />
-              <Icon name="Video" size={14} className="sm:hidden" />
-              <span className="sm:inline">Запись лида</span>
-              <span className="sm:hidden">Запись</span>
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="record" className="flex items-center gap-2">
+              <Icon name="Video" size={16} />
+              Запись лида
             </TabsTrigger>
             <TabsTrigger 
               value="archive" 
-              className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
+              className="flex items-center gap-2"
               onClick={(e) => {
                 e.preventDefault();
                 handleArchiveTabClick();
               }}
             >
-              <Icon name="Archive" size={16} className="hidden sm:block" />
-              <Icon name="Archive" size={14} className="sm:hidden" />
-              <span className="hidden sm:inline">Архив ({videoLeads.length})</span>
-              <span className="sm:hidden">Архив</span>
+              <Icon name="Archive" size={16} />
+              Архив ({videoLeads.length})
             </TabsTrigger>
           </TabsList>
 
           {/* Recording Tab */}
-          <TabsContent value="record" className="space-y-4 sm:space-y-6">
+          <TabsContent value="record" className="space-y-6">
             <VideoRecorder 
               onSaveLead={handleSaveLead}
               loading={loading}
@@ -269,7 +265,7 @@ const Index = () => {
           </TabsContent>
 
           {/* Archive Tab */}
-          <TabsContent value="archive" className="space-y-4 sm:space-y-6">
+          <TabsContent value="archive" className="space-y-6">
             {isArchiveUnlocked ? (
               <LeadsArchive 
                 videoLeads={videoLeads}

@@ -25,15 +25,15 @@ const LeadsArchive: React.FC<LeadsArchiveProps> = ({
 }) => {
   if (videoLeads.length === 0) {
     return (
-      <Card className="text-center py-8 sm:py-12 animate-fade-in">
-        <CardContent className="px-4 sm:px-6">
-          <Icon name="Archive" size={48} className="mx-auto mb-3 sm:mb-4 text-gray-300 sm:size-16" />
-          <h3 className="text-lg sm:text-xl font-semibold mb-2">Архив пуст</h3>
-          <p className="text-muted-foreground mb-4 text-sm sm:text-base">
+      <Card className="text-center py-12 animate-fade-in">
+        <CardContent>
+          <Icon name="Archive" size={64} className="mx-auto mb-4 text-gray-300" />
+          <h3 className="text-xl font-semibold mb-2">Архив пуст</h3>
+          <p className="text-muted-foreground mb-4">
             Создайте первый лид, чтобы увидеть его здесь
           </p>
-          <Button onClick={onCreateLead} className="text-sm sm:text-base h-9 sm:h-10">
-            <Icon name="Plus" size={14} className="mr-2 sm:size-4" />
+          <Button onClick={onCreateLead}>
+            <Icon name="Plus" size={16} className="mr-2" />
             Создать лид
           </Button>
         </CardContent>
@@ -42,7 +42,7 @@ const LeadsArchive: React.FC<LeadsArchiveProps> = ({
   }
 
   return (
-    <div className="grid gap-4 sm:gap-6">
+    <div className="grid gap-6">
       {videoLeads.map((lead) => (
         <VideoLeadCard key={lead.id} lead={lead} onLoadVideo={onLoadVideo} />
       ))}
@@ -71,16 +71,16 @@ const VideoLeadCard: React.FC<{
 
   return (
     <Card className="animate-fade-in">
-      <CardHeader className="pb-3 sm:pb-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-          <CardTitle className="text-base sm:text-lg pr-2">{lead.title}</CardTitle>
-          <span className="text-xs sm:text-sm text-muted-foreground shrink-0">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg">{lead.title}</CardTitle>
+          <span className="text-sm text-muted-foreground">
             {lead.created_at}
           </span>
         </div>
       </CardHeader>
-      <CardContent className="px-4 sm:px-6">
-        <div className="grid lg:grid-cols-2 gap-3 sm:gap-4">
+      <CardContent>
+        <div className="grid lg:grid-cols-2 gap-4">
           <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
             {videoDataUrl ? (
               <video

@@ -206,13 +206,13 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
 
       {/* Video Recording Block - Second on mobile */}
       <Card className="animate-scale-in">
-        <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <Icon name="Camera" size={18} className="sm:size-5" />
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Icon name="Camera" size={20} />
             Контроль качества
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+        <CardContent className="space-y-4">
           <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
             {/* Hidden recording video element */}
             {!videoUrl && (

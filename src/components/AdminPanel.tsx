@@ -271,10 +271,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
   }
 
   return (
-    <div className="container mx-auto px-4 py-4 sm:py-6 max-w-7xl">
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       <AdminStatsCards stats={stats} />
       
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UsersList
           users={users}
           selectedUser={selectedUser}
