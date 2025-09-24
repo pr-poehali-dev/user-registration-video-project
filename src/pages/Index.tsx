@@ -125,63 +125,10 @@ const Index = () => {
     setLoading(true);
 
     try {
-      // Detailed debug info
-      console.log('=== STARTING VIDEO PROCESSING ===');
-      console.log(`Blob info: size=${videoBlob.size} bytes (${(videoBlob.size/1024/1024).toFixed(2)}MB), type='${videoBlob.type}'`);
-      
-      if (videoBlob.size === 0) {
-        setError('Видео не записано или повреждено');
-        setLoading(false);
-        return;
-      }
-      
       // Convert video blob to base64
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const dataUrl = reader.result as string;
-        console.log(`FileReader completed. Result type: ${typeof dataUrl}`);
-        console.log(`Data URL total length: ${dataUrl?.length || 0}`);
-        
-        if (dataUrl) {
-          const commaIndex = dataUrl.indexOf(',');
-          console.log(`Data URL prefix (${commaIndex} chars): ${dataUrl?.substring(0, Math.min(150, commaIndex + 1))}`);
-        }
-        
-        if (!dataUrl || typeof dataUrl !== 'string') {
-          console.error('FileReader failed to read video blob');
-          setError('Ошибка при чтении видеофайла');
-          setLoading(false);
-          return;
-        }
-        
-        const base64Video = dataUrl.split(',')[1]; // Remove data URL prefix
-        
-        if (!base64Video) {
-          console.error('Failed to extract base64 from data URL');
-          console.error('Full dataUrl:', dataUrl.substring(0, 200));
-          setError('Ошибка при кодировании видео');
-          setLoading(false);
-          return;
-        }
-        
-        console.log(`Base64 extracted: length=${base64Video.length} chars`);
-        console.log(`Base64 first 100 chars: ${base64Video.substring(0, 100)}`);
-        console.log(`Base64 last 20 chars: ${base64Video.substring(base64Video.length - 20)}`);
-        
-        // Определяем формат по MIME-типу blob'a
-        const isMP4 = videoBlob.type.includes('mp4') || videoBlob.type.includes('avc');
-        const isWebM = videoBlob.type.includes('webm');
-        
-        let filename = 'recording.mp4'; // По умолчанию MP4
-        let contentType = 'video/mp4';
-        
-        if (isWebM) {
-          filename = 'recording.webm';
-          contentType = 'video/webm';
-        }
-        
-        console.log(`Video format determined: ${contentType}, filename: ${filename}`);
-        console.log(`Sending video: blob=${(videoBlob.size / 1024 / 1024).toFixed(2)}MB, base64=${(base64Video.length * 0.75 / 1024 / 1024).toFixed(2)}MB`);
+        const base64Video = (reader.result as string).split(',')[1]; // Remove data URL prefix
         
         const response = await fetch(API_URLS.leads, {
           method: 'POST',
@@ -193,44 +140,29 @@ const Index = () => {
             title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
             comments: comments,
             video_data: base64Video,
-            video_filename: filename,
-            video_content_type: contentType
+            video_filename: 'recording.webm',
+            video_content_type: 'video/webm'
           })
         });
 
         const data = await response.json();
         
-        console.log('Response status:', response.status);
-        console.log('Response data:', data);
-        
         if (response.ok && data.success) {
           // Reload leads
           await loadUserLeads(token);
           
-          toast({ 
-            title: '✅ Лид сохранен', 
-            description: `Видео запись успешно отправлена (${contentType})`, 
-          });
+          // Stay on record tab - don't switch to archive
         } else {
-          console.error('Failed to save lead:', response.status, data);
           toast({ 
             title: 'Ошибка сохранения', 
-            description: data.error || `HTTP ${response.status}: Не удалось сохранить лид`, 
+            description: data.error || 'Не удалось сохранить лид', 
             variant: 'destructive' 
           });
         }
         setLoading(false);
       };
       
-      console.log(`Starting FileReader for blob: size=${videoBlob.size}, type=${videoBlob.type}`);
       reader.readAsDataURL(videoBlob);
-      
-      // Add error handling for FileReader
-      reader.onerror = (error) => {
-        console.error('FileReader error:', error);
-        setError('Ошибка при чтении видеофайла');
-        setLoading(false);
-      };
     } catch (error) {
       toast({ 
         title: 'Ошибка', 

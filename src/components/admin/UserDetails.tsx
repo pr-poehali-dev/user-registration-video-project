@@ -3,7 +3,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import LeadItem from './LeadItem';
-import VideoPlayer from './VideoPlayer';
 
 interface Lead {
   id: string;
@@ -107,10 +106,10 @@ const UserDetails: React.FC<UserDetailsProps> = ({
             {videoUrl && (
               <div>
                 <h4 className="font-medium mb-2">Просмотр видео:</h4>
-                <VideoPlayer 
-                  videoUrl={videoUrl}
-                  leadTitle="Просмотр лида"
-                  className="w-full"
+                <video 
+                  src={videoUrl} 
+                  controls 
+                  className="w-full max-h-64 rounded-lg border"
                 />
               </div>
             )}
