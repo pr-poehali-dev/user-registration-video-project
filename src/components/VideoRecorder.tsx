@@ -244,12 +244,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
               </div>
             )}
             
-            {isRecording && (
-              <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-500 text-white px-3 py-1 rounded-full z-20">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">REC</span>
-              </div>
-            )}
+
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
