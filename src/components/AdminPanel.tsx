@@ -275,6 +275,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
       <AdminStatsCards stats={stats} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* На мобильных устройствах показываем карточки стопкой */}
         <UsersList
           users={users}
           selectedUser={selectedUser}

@@ -54,7 +54,7 @@ const LeadItem: React.FC<LeadItemProps> = ({
         <p className="text-xs text-muted-foreground">
           {formatDate(lead.created_at)}
         </p>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {lead.has_video && (
             <>
               <Button
@@ -62,21 +62,25 @@ const LeadItem: React.FC<LeadItemProps> = ({
                 variant="outline"
                 onClick={() => onLoadVideo(lead.id)}
                 disabled={loadingVideo}
+                className="flex-shrink-0"
               >
                 {loadingVideo ? (
                   <Icon name="Loader2" size={12} className="animate-spin mr-1" />
                 ) : (
                   <Icon name="Play" size={12} className="mr-1" />
                 )}
-                Смотреть
+                <span className="hidden sm:inline">Смотреть</span>
+                <span className="sm:hidden">▶</span>
               </Button>
               <Button
                 size="sm"
                 variant="secondary"
                 onClick={() => onDownloadVideo(lead.id, lead.title, userName)}
+                className="flex-shrink-0"
               >
                 <Icon name="Download" size={12} className="mr-1" />
-                Скачать
+                <span className="hidden sm:inline">Скачать</span>
+                <span className="sm:hidden">⬇</span>
               </Button>
             </>
           )}
@@ -86,13 +90,15 @@ const LeadItem: React.FC<LeadItemProps> = ({
                 size="sm"
                 variant="destructive"
                 disabled={deletingLeadId === lead.id}
+                className="flex-shrink-0"
               >
                 {deletingLeadId === lead.id ? (
                   <Icon name="Loader2" size={12} className="animate-spin mr-1" />
                 ) : (
                   <Icon name="Trash2" size={12} className="mr-1" />
                 )}
-                Удалить
+                <span className="hidden sm:inline">Удалить</span>
+                <span className="sm:hidden">🗑</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
