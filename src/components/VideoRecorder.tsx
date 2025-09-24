@@ -87,8 +87,21 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
     if (videoUrl) {
       URL.revokeObjectURL(videoUrl);
     }
+    
+    // Stop any active camera streams
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    // Clear video element source
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
     setVideoBlob(null);
     setVideoUrl('');
+    setIsRecording(false);
     toast({ title: 'Готов к пересъемке', description: 'Можете записать новое видео' });
   };
 
@@ -194,27 +207,41 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
-            {/* Hidden video element */}
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover opacity-0 absolute inset-0"
-            />
+            {/* Hidden recording video element */}
+            {!videoUrl && (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover opacity-0 absolute inset-0 pointer-events-none"
+              />
+            )}
             
-            {/* Fake cover - always visible */}
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-400">
-              <h1 className="text-black font-bold text-2xl md:text-4xl">IMPERIA PROMO</h1>
-            </div>
+            {/* Fake cover - visible during recording */}
+            {!videoUrl && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-400 z-10">
+                <h1 className="text-black font-bold text-2xl md:text-4xl select-none">IMPERIA PROMO</h1>
+              </div>
+            )}
             
-            {/* Playback video when available */}
+            {/* Playback video when available - replaces cover */}
             {videoUrl && (
               <video
                 src={videoUrl}
                 controls
-                className="w-full h-full object-cover relative z-10"
+                className="w-full h-full object-cover"
               />
+            )}
+            
+            {/* Show placeholder when no video */}
+            {!isRecording && !videoUrl && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-5">
+                <div className="text-center">
+                  <Icon name="Camera" size={48} className="mx-auto mb-2 text-gray-400" />
+                  <p className="text-gray-500">Нажмите "Начать запись"</p>
+                </div>
+              </div>
             )}
             
             {isRecording && (
