@@ -74,9 +74,9 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       };
 
       mediaRecorder.onstop = () => {
-        // Создаем blob с правильным MIME-типом MP4
-        const mimeType = options.mimeType || 'video/mp4';
-        const blob = new Blob(chunks, { type: mimeType });
+        // Создаем blob с правильным MIME-типом MP4 (используем mediaRecorder.mimeType)
+        const actualMimeType = mediaRecorder.mimeType || 'video/mp4';
+        const blob = new Blob(chunks, { type: actualMimeType });
         setVideoBlob(blob);
         const url = URL.createObjectURL(blob);
         setVideoUrl(url);

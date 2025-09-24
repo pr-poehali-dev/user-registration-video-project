@@ -22,7 +22,8 @@
         "title": "Test Lead",
         "comments": "Test comments",
         "video_data": "base64-encoded-video",
-        "video_filename": "test.webm"
+        "video_filename": "test.mp4",
+        "video_content_type": "video/mp4"
       },
       "expectedStatus": 200,
       "expectedBody": {

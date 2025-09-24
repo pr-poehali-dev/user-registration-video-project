@@ -33,6 +33,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
+            'isBase64Encoded': False,
             'body': ''
         }
     
@@ -62,6 +63,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         # Connect to database
         db_url = os.environ.get('DATABASE_URL')
+        if not db_url:
+            return {
+                'statusCode': 500,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
+                'body': json.dumps({'error': 'Database configuration missing'})
+            }
+            
         conn = psycopg2.connect(db_url)
         cursor = conn.cursor()
         
@@ -100,8 +109,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             title = body_data.get('title', '').strip()
             comments = body_data.get('comments', '').strip()
             video_base64 = body_data.get('video_data', '')  # Base64 encoded video
-            video_filename = body_data.get('video_filename', 'recording.webm')
-            video_content_type = body_data.get('video_content_type', 'video/webm')
+            video_filename = body_data.get('video_filename', 'recording.mp4')
+            video_content_type = body_data.get('video_content_type', 'video/mp4')
             
             if not title or not comments or not video_base64:
                 return {
@@ -114,7 +123,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Decode base64 video data
             try:
                 video_data = base64.b64decode(video_base64)
-            except:
+            except Exception as e:
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -150,6 +159,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 403,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
                     'body': json.dumps({'error': 'Admin access required'})
                 }
             
@@ -161,6 +171,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
                     'body': json.dumps({'error': 'lead_id parameter required'})
                 }
             
@@ -172,6 +183,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 404,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
                     'body': json.dumps({'error': 'Lead not found'})
                 }
             
