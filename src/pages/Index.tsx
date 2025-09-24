@@ -272,23 +272,25 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-success/5">
       <AppHeader user={user} onLogout={handleLogout} />
 
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="record" className="flex items-center gap-2">
-              <Icon name="Video" size={16} />
-              Запись лида
+          <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-12 sm:h-10">
+            <TabsTrigger value="record" className="flex items-center gap-2 text-sm sm:text-base font-medium">
+              <Icon name="Video" size={14} className="sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Запись лида</span>
+              <span className="xs:hidden">Запись</span>
             </TabsTrigger>
             <TabsTrigger 
               value="archive" 
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-sm sm:text-base font-medium"
               onClick={(e) => {
                 e.preventDefault();
                 handleArchiveTabClick();
               }}
             >
-              <Icon name="Archive" size={16} />
-              Архив ({videoLeads.length})
+              <Icon name="Archive" size={14} className="sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Архив ({videoLeads.length})</span>
+              <span className="xs:hidden">Архив</span>
             </TabsTrigger>
           </TabsList>
 
@@ -320,15 +322,15 @@ const Index = () => {
 
       {/* Password Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md mx-3 rounded-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Icon name="Lock" size={20} />
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Icon name="Lock" size={18} className="sm:w-5 sm:h-5" />
               Доступ к архиву
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="space-y-4 sm:space-y-6">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Введите пароль для доступа к архиву лидов:
             </p>
             <Input
@@ -341,18 +343,20 @@ const Index = () => {
                   handleArchiveAccess();
                 }
               }}
+              className="h-12 sm:h-10 text-base sm:text-sm"
             />
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
                   setShowPasswordDialog(false);
                   setArchivePassword('');
                 }}
+                className="h-12 sm:h-10 order-2 sm:order-1 touch-manipulation"
               >
                 Отмена
               </Button>
-              <Button onClick={handleArchiveAccess}>
+              <Button onClick={handleArchiveAccess} className="h-12 sm:h-10 order-1 sm:order-2 touch-manipulation">
                 Войти
               </Button>
             </div>

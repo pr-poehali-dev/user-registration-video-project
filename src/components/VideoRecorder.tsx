@@ -193,22 +193,22 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       {/* Comments Block - First on mobile */}
       <Card className="animate-scale-in">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Icon name="FileText" size={20} />
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Icon name="FileText" size={18} className="sm:w-5 sm:h-5" />
             Комментарии к лиду
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
           <Textarea
             placeholder="Опишите детали лида, контактную информацию, особые заметки..."
             value={comments}
             onChange={(e) => setComments(e.target.value)}
-            rows={6}
-            className="resize-none"
+            rows={4}
+            className="resize-none text-sm sm:text-base min-h-[100px] sm:min-h-[120px]"
           />
           
           {/* Upload Progress Bar */}
@@ -229,7 +229,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
           
           <Button 
             onClick={handleSaveLead} 
-            className="w-full"
+            className="w-full h-12 sm:h-10 text-base sm:text-sm font-medium touch-manipulation"
             disabled={!videoBlob || !comments.trim() || loading || isUploading}
           >
             {loading || isUploading ? (
@@ -244,14 +244,14 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
 
       {/* Video Recording Block - Second on mobile */}
       <Card className="animate-scale-in">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Icon name="Camera" size={20} />
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Icon name="Camera" size={18} className="sm:w-5 sm:h-5" />
             Контроль качества
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
+        <CardContent className="space-y-3 sm:space-y-4">
+          <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative touch-manipulation">
             {/* Hidden recording video element */}
             {!videoUrl && (
               <video
@@ -266,7 +266,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
             {/* Fake cover - visible during recording */}
             {!videoUrl && (
               <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-                <h1 className="text-black font-bold text-2xl md:text-4xl select-none">IMPERIA PROMO</h1>
+                <h1 className="text-black font-bold text-xl sm:text-2xl md:text-4xl select-none px-4 text-center">IMPERIA PROMO</h1>
               </div>
             )}
             
@@ -282,9 +282,9 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
             {/* Show placeholder when no video */}
             {!isRecording && !videoUrl && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-5">
-                <div className="text-center">
-                  <Icon name="Camera" size={48} className="mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-500">Нажмите "Начать запись"</p>
+                <div className="text-center px-4">
+                  <Icon name="Camera" size={40} className="mx-auto mb-2 text-gray-400 sm:w-12 sm:h-12" />
+                  <p className="text-gray-500 text-sm sm:text-base">Нажмите "Начать запись"</p>
                 </div>
               </div>
             )}
@@ -292,23 +292,23 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
 
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
             {!isRecording && !videoUrl && (
-              <Button onClick={startVideoRecording} className="flex-1">
+              <Button onClick={startVideoRecording} className="flex-1 h-12 sm:h-10 text-base sm:text-sm font-medium touch-manipulation">
                 <Icon name="Play" size={16} className="mr-2" />
                 Начать запись
               </Button>
             )}
             
             {isRecording && (
-              <Button onClick={stopVideoRecording} variant="destructive" className="flex-1">
+              <Button onClick={stopVideoRecording} variant="destructive" className="flex-1 h-12 sm:h-10 text-base sm:text-sm font-medium touch-manipulation">
                 <Icon name="Square" size={16} className="mr-2" />
                 Остановить
               </Button>
             )}
             
             {videoUrl && (
-              <Button onClick={retakeVideo} variant="outline" className="flex-1">
+              <Button onClick={retakeVideo} variant="outline" className="flex-1 h-12 sm:h-10 text-base sm:text-sm font-medium touch-manipulation">
                 <Icon name="RefreshCw" size={16} className="mr-2" />
                 Пересъемка
               </Button>
