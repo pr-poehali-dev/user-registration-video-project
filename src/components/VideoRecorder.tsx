@@ -43,10 +43,10 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
         videoRef.current.srcObject = stream;
       }
 
-      // Принудительно проверяем поддержку MP4 и используем только его
+      // Оптимизированные настройки для лучшей перемотки
       let options: MediaRecorderOptions = {
-        videoBitsPerSecond: 300000,
-        audioBitsPerSecond: 32000
+        videoBitsPerSecond: 800000, // Увеличен битрейт для лучшего качества и перемотки
+        audioBitsPerSecond: 64000   // Увеличен битрейт аудио
       };
       
       // Проверяем поддержку H.264/MP4 кодека
@@ -98,7 +98,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
         }
       };
 
-      mediaRecorder.start(1000); // Собираем данные каждые 1000мс
+      mediaRecorder.start(500); // Собираем данные каждые 500мс для лучших ключевых кадров
       setIsRecording(true);
       console.log('MediaRecorder started with mimeType:', mediaRecorder.mimeType);
       toast({ title: 'Запись началась', description: 'Записываем видео с задней камеры' });
@@ -275,7 +275,17 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
               <video
                 src={videoUrl}
                 controls
+                preload="auto"
+                playsInline
                 className="w-full h-full object-cover"
+                onLoadedMetadata={(e) => {
+                  // Оптимизация для лучшей перемотки
+                  const video = e.target as HTMLVideoElement;
+                  if (video.duration > 0) {
+                    video.currentTime = 0.1;
+                    video.currentTime = 0;
+                  }
+                }}
               />
             )}
             
