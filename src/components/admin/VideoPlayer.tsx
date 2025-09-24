@@ -37,24 +37,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
   const checkVideoSupport = async () => {
     if (!videoUrl) return;
 
-    // For iOS, check version and WebM support
+    // Проверяем поддержку разных форматов
+    const video = document.createElement('video');
+    
+    // Определяем формат видео по URL или MIME-типу
+    const isMP4Video = videoUrl.includes('mp4') || videoUrl.includes('avc') || videoUrl.includes('h264');
+    const isWebMVideo = videoUrl.includes('webm');
+    
+    // Проверим поддержку форматов
+    const canPlayMP4 = video.canPlayType('video/mp4') !== '';
+    const canPlayWebM = video.canPlayType('video/webm') !== '';
+    
+    // Для iOS: MP4 работает отлично, WebM - ограниченно
     if (isIOS) {
-      const video = document.createElement('video');
-      const canPlayWebM = video.canPlayType('video/webm') !== '';
-      const canPlayWebMCodecs = video.canPlayType('video/webm; codecs="vp8"') !== '';
-      
-      // iOS 15+ has better WebM support, but still limited
-      const hasWebMSupport = canPlayWebM && canPlayWebMCodecs;
-      
-      if (!hasWebMSupport || (iosVersion && iosVersion[0] < 15)) {
+      if (isWebMVideo && !canPlayWebM) {
         setIsSupported(false);
         toast({
-          title: '📱 iOS устройство',
-          description: 'Видео лучше скачать для просмотра в стандартном плеере iOS.',
+          title: '📱 Старый формат',
+          description: 'Это WebM видео. Новые записи в MP4 будут работать лучше.',
           variant: 'default'
         });
         return;
       }
+      // MP4 должен работать на всех iOS
     }
     
     // For Android Chrome - should work fine
@@ -157,7 +162,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
           ) : (
             <Icon name="Download" size={16} className="mr-2" />
           )}
-          Скачать видео (.webm)
+          Скачать видео
         </Button>
         {isIOS && (
           <p className="text-xs text-muted-foreground mt-2">
@@ -196,6 +201,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
           });
         }}
       >
+        {/* Поддержка разных форматов - MP4 приоритетнее для совместимости */}
+        <source src={videoUrl} type="video/mp4" />
         <source src={videoUrl} type="video/webm" />
         <p className="text-sm text-muted-foreground">
           Ваш браузер не поддерживает воспроизведение видео.

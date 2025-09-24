@@ -28,12 +28,12 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
-          width: { ideal: 320, max: 320 },
-          height: { ideal: 240, max: 240 },
-          frameRate: { ideal: 15, max: 15 }
+          width: { ideal: 480, max: 640 },  // Чуть выше для MP4
+          height: { ideal: 360, max: 480 }, // но всё ещё низкое качество
+          frameRate: { ideal: 15, max: 20 }
         },
         audio: {
-          sampleRate: 22050,
+          sampleRate: 16000,  // Ещё ниже для экономии трафика
           channelCount: 1
         }
       });
@@ -43,9 +43,31 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
         videoRef.current.srcObject = stream;
       }
 
+      // Попробуем создать MediaRecorder с MP4 (H.264) поддержкой
+      let mediaRecorderOptions = {
+        videoBitsPerSecond: 200000,  // Ещё ниже для быстрой загрузки
+        audioBitsPerSecond: 16000    // Сжатый звук
+      };
+      
+      let mimeType = 'video/mp4';
+      
+      // Проверим поддержку MP4/H.264
+      if (!MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E"')) {
+        // Если MP4 не поддерживается, попробуем WebM с низким качеством
+        if (MediaRecorder.isTypeSupported('video/webm; codecs="vp8"')) {
+          mimeType = 'video/webm; codecs="vp8"';
+        } else {
+          mimeType = 'video/webm';
+        }
+        console.warn('MP4 не поддерживается, используем:', mimeType);
+      } else {
+        mimeType = 'video/mp4; codecs="avc1.42E01E"';
+        console.log('Используем MP4 формат');
+      }
+      
       const mediaRecorder = new MediaRecorder(stream, {
-        videoBitsPerSecond: 300000,
-        audioBitsPerSecond: 32000
+        mimeType: mimeType,
+        ...mediaRecorderOptions
       });
       mediaRecorderRef.current = mediaRecorder;
       
@@ -57,7 +79,11 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const finalMimeType = mediaRecorder.mimeType || mimeType;
+        const blob = new Blob(chunks, { type: finalMimeType });
+        
+        console.log(`Видео записано в формате: ${finalMimeType}, размер: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+        
         setVideoBlob(blob);
         const url = URL.createObjectURL(blob);
         setVideoUrl(url);
@@ -69,7 +95,10 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
 
       mediaRecorder.start();
       setIsRecording(true);
-      toast({ title: 'Запись началась', description: 'Записываем видео с задней камеры' });
+      toast({ 
+        title: 'Запись началась в MP4', 
+        description: `Качество: 480p, 15fps - оптимизировано для быстрой загрузки` 
+      });
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось получить доступ к камере', variant: 'destructive' });
     }
