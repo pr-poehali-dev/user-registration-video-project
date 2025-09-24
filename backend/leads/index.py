@@ -21,6 +21,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Args: event with httpMethod, headers (X-Auth-Token), body with video/comments data
     Returns: Lead data or list of user leads
     '''
+    print(f"Handler called with method: {event.get('httpMethod', 'UNKNOWN')}")
     method: str = event.get('httpMethod', 'GET')
     
     # Handle CORS OPTIONS request
@@ -105,7 +106,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         elif method == 'POST':
             # Create new lead
+            print(f"POST request received, body length: {len(event.get('body', ''))}")
             body_data = json.loads(event.get('body', '{}'))
+            print(f"Parsed body data keys: {list(body_data.keys())}")
             title = body_data.get('title', '').strip()
             comments = body_data.get('comments', '').strip()
             video_base64 = body_data.get('video_data', '')  # Base64 encoded video

@@ -129,6 +129,8 @@ const Index = () => {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64Video = (reader.result as string).split(',')[1]; // Remove data URL prefix
+        console.log('Video blob type:', videoBlob.type);
+        console.log('Base64 length:', base64Video.length);
         
         const response = await fetch(API_URLS.leads, {
           method: 'POST',

@@ -58,9 +58,17 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
         options.mimeType = 'video/mp4; codecs=h264';
       } else if (MediaRecorder.isTypeSupported('video/mp4')) {
         options.mimeType = 'video/mp4';
+      } else if (MediaRecorder.isTypeSupported('video/webm')) {
+        // Временный fallback для тестирования
+        options.mimeType = 'video/webm';
+        toast({ 
+          title: '⚠️ Устаревший формат', 
+          description: 'Браузер не поддерживает MP4. Использую WebM временно.', 
+          variant: 'destructive' 
+        });
       } else {
-        // Если MP4 не поддерживается, показываем ошибку
-        throw new Error('Браузер не поддерживает запись в формате MP4');
+        // Если ничего не поддерживается, показываем ошибку
+        throw new Error('Браузер не поддерживает запись видео');
       }
       
       const mediaRecorder = new MediaRecorder(stream, options);
