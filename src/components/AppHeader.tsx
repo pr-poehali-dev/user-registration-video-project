@@ -19,7 +19,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout }) => {
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Icon name="Video" size={24} className="text-primary" />
-          <h1 className="font-bold text-xl">Imperia Promo</h1>
+          <h1 className="font-bold text-xl">IMPERIA PROMO</h1>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground hidden sm:block">
