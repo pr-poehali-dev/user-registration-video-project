@@ -156,22 +156,67 @@ const Index = () => {
           return;
         }
         
+        console.log('Starting POST request to:', API_URLS.leads);
+        console.log('Token length:', token.length);
+        console.log('Comments:', comments);
+        console.log('Base64 video length:', base64Video.length);
+        
+        // Check file size limits
+        const videoSizeMB = videoBlob.size / (1024 * 1024);
+        const base64SizeMB = (base64Video.length * 3) / (4 * 1024 * 1024); // base64 is ~33% larger
+        console.log('Video blob size:', videoBlob.size, 'bytes (', videoSizeMB.toFixed(2), 'MB)');
+        console.log('Base64 size estimate:', base64SizeMB.toFixed(2), 'MB');
+        
+        // Warn if approaching limits
+        if (videoSizeMB > 8) {
+          console.warn('Video size approaching Cloud Function limits!');
+          toast({ 
+            title: '⚠️ Большой размер видео', 
+            description: `Размер: ${videoSizeMB.toFixed(1)}MB. Это может вызвать проблемы с загрузкой.`, 
+            variant: 'destructive' 
+          });
+        }
+        
+        const requestBody = {
+          title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
+          comments: comments,
+          video_data: base64Video,
+          video_filename: 'recording.mp4',
+          video_content_type: 'video/mp4'
+        };
+        
+        console.log('Request body keys:', Object.keys(requestBody));
+        
+        // Create fetch with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
         const response = await fetch(API_URLS.leads, {
           method: 'POST',
           headers: {
             'X-Auth-Token': token,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
-            comments: comments,
-            video_data: base64Video,
-            video_filename: 'recording.mp4',
-            video_content_type: 'video/mp4'
-          })
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
 
-        const data = await response.json();
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        const responseText = await response.text();
+        console.log('Raw response text:', responseText);
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          console.error('Response text that failed to parse:', responseText);
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 200)}`);
+        }
         
         if (response.ok && data.success) {
           // Reload leads
@@ -199,10 +244,28 @@ const Index = () => {
       };
       
       reader.readAsDataURL(videoBlob);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Full error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      let errorMessage = 'Не удалось сохранить лид';
+      
+      if (error.name === 'AbortError') {
+        errorMessage = 'Превышено время ожидания (30 сек) - попробуйте еще раз';
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = 'Ошибка сети - проверьте подключение к интернету';
+      } else if (error.message.includes('Invalid JSON')) {
+        errorMessage = 'Сервер вернул некорректный ответ';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Превышено время ожидания - попробуйте еще раз';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({ 
         title: 'Ошибка', 
-        description: 'Не удалось сохранить лид', 
+        description: errorMessage, 
         variant: 'destructive' 
       });
       setLoading(false);
