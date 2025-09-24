@@ -220,7 +220,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
             
             {/* Fake cover - visible during recording */}
             {!videoUrl && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-400 z-10">
+              <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
                 <h1 className="text-black font-bold text-2xl md:text-4xl select-none">IMPERIA PROMO</h1>
               </div>
             )}
