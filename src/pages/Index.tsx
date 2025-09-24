@@ -130,8 +130,17 @@ const Index = () => {
       reader.onloadend = async () => {
         const result = reader.result as string;
         console.log('FileReader result length:', result.length);
-        console.log('FileReader result prefix:', result.substring(0, 50));
-        const base64Video = result.split(',')[1]; // Remove data URL prefix
+        console.log('FileReader result prefix:', result.substring(0, 100));
+        
+        // Найдем позицию base64 данных после "base64,"
+        const base64Index = result.indexOf('base64,');
+        if (base64Index === -1) {
+          console.error('Base64 marker not found in result');
+          setLoading(false);
+          return;
+        }
+        
+        const base64Video = result.substring(base64Index + 7); // Skip "base64," (7 chars)
         console.log('Video blob type:', videoBlob.type);
         console.log('Video blob size:', videoBlob.size);
         console.log('Base64 length after split:', base64Video.length);
