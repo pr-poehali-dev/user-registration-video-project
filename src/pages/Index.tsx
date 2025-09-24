@@ -8,18 +8,21 @@ import AuthForm from '@/components/AuthForm';
 import AppHeader from '@/components/AppHeader';
 import VideoRecorder from '@/components/VideoRecorder';
 import LeadsArchive from '@/components/LeadsArchive';
+import AdminPanel from '@/components/AdminPanel';
 
 // API URLs
 const API_URLS = {
   auth: 'https://functions.poehali.dev/080ec769-925f-4132-8cd3-549c89bdc4c0',
   leads: 'https://functions.poehali.dev/a119ce14-9a5b-40de-b18f-3ef1f6dc7484',
-  video: 'https://functions.poehali.dev/75e3022c-965a-4cd9-b5c1-bd179806e509'
+  video: 'https://functions.poehali.dev/75e3022c-965a-4cd9-b5c1-bd179806e509',
+  admin: 'https://functions.poehali.dev/bf64fc6c-c075-4df6-beb9-f5b527586fa1'
 };
 
 interface User {
   id: string;
   email: string;
   name: string;
+  role?: string;
 }
 
 interface VideoLead {
@@ -79,7 +82,15 @@ const Index = () => {
   const handleAuthSuccess = async (userData: User, authToken: string) => {
     setUser(userData);
     setToken(authToken);
-    await loadUserLeads(authToken);
+    
+    // Store token and user data
+    localStorage.setItem('auth_token', authToken);
+    localStorage.setItem('user_data', JSON.stringify(userData));
+    
+    // Load user leads only for regular users, not admin
+    if (userData.role !== 'admin') {
+      await loadUserLeads(authToken);
+    }
   };
 
   const handleSaveLead = async (videoBlob: Blob, comments: string) => {
@@ -179,6 +190,21 @@ const Index = () => {
     );
   }
 
+  // Admin interface
+  if (user.role === 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-success/5">
+        <AppHeader user={user} onLogout={handleLogout} />
+        <AdminPanel 
+          token={token}
+          adminApiUrl={API_URLS.admin}
+          videoApiUrl={API_URLS.video}
+        />
+      </div>
+    );
+  }
+
+  // Regular user interface
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-success/5">
       <AppHeader user={user} onLogout={handleLogout} />

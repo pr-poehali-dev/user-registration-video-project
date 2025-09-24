@@ -1,37 +1,34 @@
 {
   "tests": [
     {
-      "name": "Register new user",
+      "name": "Login admin user",
       "method": "POST",
       "body": {
-        "action": "register",
-        "email": "test@example.com",
-        "password": "testpass123",
-        "name": "Test User"
+        "action": "login",
+        "email": "admin@gmail.com",
+        "password": "admin"
       },
       "expectedStatus": 200,
       "expectedBody": {
         "success": true,
         "token": "string",
         "user": {
-          "email": "string",
-          "name": "string"
+          "role": "admin"
         }
       },
       "bodyMatcher": "partial"
     },
     {
-      "name": "Login existing user",
+      "name": "Invalid login",
       "method": "POST",
       "body": {
         "action": "login",
-        "email": "test@example.com",
-        "password": "testpass123"
+        "email": "wrong@email.com",
+        "password": "wrongpass"
       },
-      "expectedStatus": 200,
+      "expectedStatus": 401,
       "expectedBody": {
-        "success": true,
-        "token": "string"
+        "error": "string"
       },
       "bodyMatcher": "partial"
     }

@@ -93,6 +93,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'user_id': user_id,
                 'email': email,
                 'name': name,
+                'role': 'user',
                 'exp': datetime.utcnow() + timedelta(days=30)
             }
             token = jwt.encode(token_payload, jwt_secret, algorithm='HS256')
@@ -107,12 +108,42 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'user': {
                         'id': user_id,
                         'email': email,
-                        'name': name
+                        'name': name,
+                        'role': 'user'
                     }
                 })
             }
         
         elif action == 'login':
+            # Check if admin login
+            if email == 'admin@gmail.com' and password == 'admin':
+                # Admin user - no database check needed
+                token_payload = {
+                    'user_id': 'admin',
+                    'email': 'admin@gmail.com',
+                    'name': 'Администратор',
+                    'role': 'admin',
+                    'exp': datetime.utcnow() + timedelta(days=30)
+                }
+                token = jwt.encode(token_payload, jwt_secret, algorithm='HS256')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({
+                        'success': True,
+                        'token': token,
+                        'user': {
+                            'id': 'admin',
+                            'email': 'admin@gmail.com',
+                            'name': 'Администратор',
+                            'role': 'admin'
+                        }
+                    })
+                }
+            
+            # Regular user login
             # Hash provided password
             password_hash = hashlib.sha256(password.encode()).hexdigest()
             
@@ -138,6 +169,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'user_id': user_id,
                 'email': user_email,
                 'name': user_name,
+                'role': 'user',
                 'exp': datetime.utcnow() + timedelta(days=30)
             }
             token = jwt.encode(token_payload, jwt_secret, algorithm='HS256')
@@ -152,7 +184,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'user': {
                         'id': user_id,
                         'email': user_email,
-                        'name': user_name
+                        'name': user_name,
+                        'role': 'user'
                     }
                 })
             }
