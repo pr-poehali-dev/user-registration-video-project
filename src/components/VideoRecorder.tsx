@@ -15,6 +15,8 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [isRecording, setIsRecording] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -96,11 +98,40 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       return;
     }
 
-    await onSaveLead(videoBlob, comments);
+    setIsUploading(true);
+    setUploadProgress(0);
     
-    // Clear form after successful save
-    setComments('');
-    retakeVideo();
+    // Simulate upload progress
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return prev;
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 200);
+
+    try {
+      await onSaveLead(videoBlob, comments);
+      
+      // Complete progress
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+        setComments('');
+        retakeVideo();
+      }, 500);
+      
+    } catch (error) {
+      clearInterval(progressInterval);
+      setIsUploading(false);
+      setUploadProgress(0);
+      throw error;
+    }
   };
 
   return (
@@ -190,17 +221,33 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
             className="resize-none"
           />
           
+          {/* Upload Progress Bar */}
+          {isUploading && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Загрузка видео...</span>
+                <span>{Math.round(uploadProgress)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+          
           <Button 
             onClick={handleSaveLead} 
             className="w-full bg-success hover:bg-success/90"
-            disabled={!videoBlob || !comments.trim() || loading}
+            disabled={!videoBlob || !comments.trim() || loading || isUploading}
           >
-            {loading ? (
+            {loading || isUploading ? (
               <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
             ) : (
               <Icon name="Save" size={16} className="mr-2" />
             )}
-            Сохранить лид
+            {isUploading ? 'Загружаем...' : 'Сохранить лид'}
           </Button>
         </CardContent>
       </Card>
