@@ -61,8 +61,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
 
       if (response.ok) {
         const data = await response.json();
-        setUsers(data.users || []);
+        const newUsers = data.users || [];
+        setUsers(newUsers);
         setStats(data.statistics || { total_users: 0, total_leads: 0, total_videos: 0 });
+        
+        // Update selected user with fresh data if one was selected
+        if (selectedUser) {
+          const updatedSelectedUser = newUsers.find((u: User) => u.id === selectedUser.id);
+          setSelectedUser(updatedSelectedUser || null);
+        }
       } else {
         toast({
           title: 'Ошибка загрузки',
@@ -195,6 +202,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
             description: `Лид "${leadTitle}" успешно удален из системы`,
           });
           
+          // Reload admin data to refresh the UI (selectedUser will be updated automatically)
           await loadAdminData();
         } else {
           throw new Error(data.error || 'Failed to delete lead');
