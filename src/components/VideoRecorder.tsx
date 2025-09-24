@@ -76,15 +76,19 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       
       const chunks: BlobPart[] = [];
       mediaRecorder.ondataavailable = (event) => {
+        console.log('Data available:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           chunks.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
+        console.log('Recording stopped, chunks:', chunks.length);
+        console.log('Total chunks size:', chunks.reduce((sum, chunk) => sum + chunk.size, 0));
         // Создаем blob с правильным MIME-типом MP4 (используем mediaRecorder.mimeType)
         const actualMimeType = mediaRecorder.mimeType || 'video/mp4';
         const blob = new Blob(chunks, { type: actualMimeType });
+        console.log('Final blob size:', blob.size, 'type:', blob.type);
         setVideoBlob(blob);
         const url = URL.createObjectURL(blob);
         setVideoUrl(url);
@@ -94,8 +98,9 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
         }
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(1000); // Собираем данные каждые 1000мс
       setIsRecording(true);
+      console.log('MediaRecorder started with mimeType:', mediaRecorder.mimeType);
       toast({ title: 'Запись началась', description: 'Записываем видео с задней камеры' });
     } catch (error: any) {
       let errorMessage = 'Не удалось получить доступ к камере';
