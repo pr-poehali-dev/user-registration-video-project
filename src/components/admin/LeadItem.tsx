@@ -64,25 +64,23 @@ const LeadItem: React.FC<LeadItemProps> = ({
                 variant="outline"
                 onClick={() => onLoadVideo(lead.id)}
                 disabled={loadingVideo}
-                className="flex-1 sm:flex-none h-9 text-xs sm:text-sm touch-manipulation"
+                className="w-9 h-9 p-0 touch-manipulation"
+                title="Смотреть видео"
               >
                 {loadingVideo ? (
-                  <Icon name="Loader2" size={12} className="animate-spin mr-1" />
+                  <Icon name="Loader2" size={14} className="animate-spin" />
                 ) : (
-                  <Icon name="Play" size={12} className="mr-1" />
+                  <Icon name="Play" size={14} />
                 )}
-                <span className="hidden xs:inline">Смотреть</span>
-                <span className="xs:hidden">Плей</span>
               </Button>
               <Button
                 size="sm"
                 variant="secondary"
                 onClick={() => onDownloadVideo(lead.id, lead.title, userName)}
-                className="flex-1 sm:flex-none h-9 text-xs sm:text-sm touch-manipulation"
+                className="w-9 h-9 p-0 touch-manipulation"
+                title="Скачать видео"
               >
-                <Icon name="Download" size={12} className="mr-1" />
-                <span className="hidden xs:inline">Скачать</span>
-                <span className="xs:hidden">Дл</span>
+                <Icon name="Download" size={14} />
               </Button>
             </>
           )}
@@ -92,15 +90,14 @@ const LeadItem: React.FC<LeadItemProps> = ({
                 size="sm"
                 variant="destructive"
                 disabled={deletingLeadId === lead.id}
-                className="flex-1 sm:flex-none h-9 text-xs sm:text-sm touch-manipulation"
+                className="w-9 h-9 p-0 touch-manipulation"
+                title="Удалить лид"
               >
                 {deletingLeadId === lead.id ? (
-                  <Icon name="Loader2" size={12} className="animate-spin mr-1" />
+                  <Icon name="Loader2" size={14} className="animate-spin" />
                 ) : (
-                  <Icon name="Trash2" size={12} className="mr-1" />
+                  <Icon name="Trash2" size={14} />
                 )}
-                <span className="hidden xs:inline">Удалить</span>
-                <span className="xs:hidden">Уд</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md mx-3 rounded-lg">
