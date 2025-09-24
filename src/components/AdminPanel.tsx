@@ -116,6 +116,76 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
     }
   };
 
+  const downloadVideo = async (leadId: string, leadTitle: string, userName: string) => {
+    try {
+      const response = await fetch(`${videoApiUrl}?id=${leadId}`, {
+        method: 'GET',
+        headers: {
+          'X-Auth-Token': token
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.video_url) {
+          // Create a temporary link to download the video
+          const link = document.createElement('a');
+          link.href = data.video_url;
+          link.download = `${userName}_${leadTitle}_${leadId}.webm`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({
+            title: 'Скачивание начато',
+            description: `Видео "${leadTitle}" от ${userName} загружается`,
+          });
+        } else {
+          toast({
+            title: 'Видео не найдено',
+            description: 'Видео для этого лида не существует',
+            variant: 'destructive'
+          });
+        }
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка скачивания',
+        description: 'Не удалось скачать видео',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const downloadAllUserVideos = async (user: User) => {
+    const videosToDownload = user.leads.filter(lead => lead.has_video);
+    
+    if (videosToDownload.length === 0) {
+      toast({
+        title: 'Нет видео',
+        description: `У пользователя ${user.name} нет видеозаписей`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    toast({
+      title: 'Скачивание начато',
+      description: `Загружаю ${videosToDownload.length} видео от ${user.name}`,
+    });
+
+    // Download each video with a small delay
+    for (let i = 0; i < videosToDownload.length; i++) {
+      const lead = videosToDownload[i];
+      await downloadVideo(lead.id, lead.title, user.name);
+      
+      // Small delay between downloads to avoid overwhelming the server
+      if (i < videosToDownload.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ru-RU', {
       year: 'numeric',
@@ -205,9 +275,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
                         Регистрация: {formatDate(user.created_at)}
                       </p>
                     </div>
-                    <Badge variant="secondary">
-                      {user.leads.length} лидов
-                    </Badge>
+                    <div className="flex flex-col gap-2 items-end">
+                      <Badge variant="secondary">
+                        {user.leads.length} лидов
+                      </Badge>
+                      {user.leads.filter(l => l.has_video).length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadAllUserVideos(user);
+                          }}
+                        >
+                          <Icon name="Download" size={12} className="mr-1" />
+                          {user.leads.filter(l => l.has_video).length} видео
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -239,38 +324,63 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
                   <h4 className="font-medium mb-2">Лиды пользователя:</h4>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {selectedUser.leads.length > 0 ? (
-                      selectedUser.leads.map((lead) => (
-                        <div key={lead.id} className="p-3 border rounded-lg">
-                          <div className="flex justify-between items-start mb-2">
-                            <p className="font-medium text-sm">{lead.title}</p>
-                            <Badge variant={lead.has_video ? 'default' : 'secondary'}>
-                              <Icon name={lead.has_video ? 'Video' : 'FileText'} size={12} className="mr-1" />
-                              {lead.has_video ? 'Видео' : 'Текст'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">{lead.comments}</p>
-                          <div className="flex justify-between items-center">
-                            <p className="text-xs text-muted-foreground">
-                              {formatDate(lead.created_at)}
-                            </p>
-                            {lead.has_video && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => loadVideo(lead.id)}
-                                disabled={loadingVideo}
-                              >
-                                {loadingVideo ? (
-                                  <Icon name="Loader2" size={12} className="animate-spin mr-1" />
-                                ) : (
-                                  <Icon name="Play" size={12} className="mr-1" />
-                                )}
-                                Видео
-                              </Button>
-                            )}
-                          </div>
+                      <>
+                        {/* Buttons to download all videos */}
+                        <div className="flex gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => downloadAllUserVideos(selectedUser)}
+                            disabled={selectedUser.leads.filter(l => l.has_video).length === 0}
+                          >
+                            <Icon name="Download" size={12} className="mr-1" />
+                            Скачать все видео ({selectedUser.leads.filter(l => l.has_video).length})
+                          </Button>
                         </div>
-                      ))
+                        
+                        {selectedUser.leads.map((lead) => (
+                          <div key={lead.id} className="p-3 border rounded-lg">
+                            <div className="flex justify-between items-start mb-2">
+                              <p className="font-medium text-sm">{lead.title}</p>
+                              <Badge variant={lead.has_video ? 'default' : 'secondary'}>
+                                <Icon name={lead.has_video ? 'Video' : 'FileText'} size={12} className="mr-1" />
+                                {lead.has_video ? 'Видео' : 'Текст'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">{lead.comments}</p>
+                            <div className="flex justify-between items-center">
+                              <p className="text-xs text-muted-foreground">
+                                {formatDate(lead.created_at)}
+                              </p>
+                              {lead.has_video && (
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => loadVideo(lead.id)}
+                                    disabled={loadingVideo}
+                                  >
+                                    {loadingVideo ? (
+                                      <Icon name="Loader2" size={12} className="animate-spin mr-1" />
+                                    ) : (
+                                      <Icon name="Play" size={12} className="mr-1" />
+                                    )}
+                                    Смотреть
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => downloadVideo(lead.id, lead.title, selectedUser.name)}
+                                  >
+                                    <Icon name="Download" size={12} className="mr-1" />
+                                    Скачать
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </>
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-4">
                         У пользователя пока нет лидов
