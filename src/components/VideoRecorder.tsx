@@ -26,8 +26,9 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
-          width: { ideal: 640 },
-          height: { ideal: 360 }
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 360 },
+          frameRate: { ideal: 30 }
         },
         audio: true
       });
@@ -37,7 +38,9 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
         videoRef.current.srcObject = stream;
       }
 
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, {
+        videoBitsPerSecond: 2500000
+      });
       mediaRecorderRef.current = mediaRecorder;
       
       const chunks: BlobPart[] = [];
