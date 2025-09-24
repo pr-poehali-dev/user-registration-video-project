@@ -128,9 +128,24 @@ const Index = () => {
       // Convert video blob to base64
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64Video = (reader.result as string).split(',')[1]; // Remove data URL prefix
+        const result = reader.result as string;
+        console.log('FileReader result length:', result.length);
+        console.log('FileReader result prefix:', result.substring(0, 50));
+        const base64Video = result.split(',')[1]; // Remove data URL prefix
         console.log('Video blob type:', videoBlob.type);
-        console.log('Base64 length:', base64Video.length);
+        console.log('Video blob size:', videoBlob.size);
+        console.log('Base64 length after split:', base64Video.length);
+        
+        if (!base64Video || base64Video.length === 0) {
+          console.error('Base64 conversion failed - empty result');
+          toast({ 
+            title: 'Ошибка кодирования видео', 
+            description: 'Не удалось преобразовать видео в base64', 
+            variant: 'destructive' 
+          });
+          setLoading(false);
+          return;
+        }
         
         const response = await fetch(API_URLS.leads, {
           method: 'POST',
@@ -161,6 +176,16 @@ const Index = () => {
             variant: 'destructive' 
           });
         }
+        setLoading(false);
+      };
+      
+      reader.onerror = (error) => {
+        console.error('FileReader error:', error);
+        toast({ 
+          title: 'Ошибка чтения файла', 
+          description: 'Не удалось прочитать видео файл', 
+          variant: 'destructive' 
+        });
         setLoading(false);
       };
       
