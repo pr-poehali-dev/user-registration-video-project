@@ -123,6 +123,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
     }
   };
 
+  const closeVideo = () => {
+    setVideoUrl('');
+  };
+
   const downloadVideo = async (leadId: string, leadTitle: string, userName: string) => {
     try {
       const response = await fetch(`${videoApiUrl}?id=${leadId}`, {
@@ -292,6 +296,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
           onDownloadVideo={downloadVideo}
           onDeleteLead={deleteLead}
           onDownloadAllUserVideos={downloadAllUserVideos}
+          onCloseVideo={closeVideo}
           formatDate={formatDate}
         />
       </div>

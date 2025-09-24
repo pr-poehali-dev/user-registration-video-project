@@ -30,6 +30,7 @@ interface UserDetailsProps {
   onDownloadVideo: (leadId: string, leadTitle: string, userName: string) => void;
   onDeleteLead: (leadId: string, leadTitle: string) => void;
   onDownloadAllUserVideos: (user: User) => void;
+  onCloseVideo: () => void;
   formatDate: (dateString: string) => string;
 }
 
@@ -42,6 +43,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
   onDownloadVideo,
   onDeleteLead,
   onDownloadAllUserVideos,
+  onCloseVideo,
   formatDate
 }) => {
   return (
@@ -105,7 +107,18 @@ const UserDetails: React.FC<UserDetailsProps> = ({
 
             {videoUrl && (
               <div>
-                <h4 className="font-medium mb-2">Просмотр видео:</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Просмотр видео:</h4>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onCloseVideo}
+                    className="w-8 h-8 p-0"
+                    title="Закрыть видео"
+                  >
+                    <Icon name="X" size={14} />
+                  </Button>
+                </div>
                 <video 
                   src={videoUrl} 
                   controls 
