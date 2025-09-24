@@ -249,7 +249,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
               </div>
               {externalUploadProgress !== undefined && currentProgress > 0 && (
                 <div className="text-xs text-gray-500">
-                  Многочастная загрузка • Размер файла > 8MB
+                  Многочастная загрузка • Размер файла &gt; 8MB
                 </div>
               )}
             </div>
