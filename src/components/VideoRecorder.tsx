@@ -8,14 +8,18 @@ import { useToast } from '@/hooks/use-toast';
 interface VideoRecorderProps {
   onSaveLead: (videoBlob: Blob, comments: string) => Promise<void>;
   loading: boolean;
+  externalUploadProgress?: number;
 }
 
-const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) => {
+const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, externalUploadProgress }) => {
   const [comments, setComments] = useState('');
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [isRecording, setIsRecording] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  
+  // Use external progress if available, otherwise internal progress
+  const currentProgress = externalUploadProgress ?? uploadProgress;
   const [isUploading, setIsUploading] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -152,23 +156,35 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
     setIsUploading(true);
     setUploadProgress(0);
     
-    // Simulate upload progress
-    const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return prev;
-        }
-        return prev + Math.random() * 15;
-      });
-    }, 200);
+    // Check if this will be a chunked upload
+    const videoSizeMB = videoBlob.size / (1024 * 1024);
+    const isChunkedUpload = videoSizeMB > 8;
+    
+    let progressInterval: NodeJS.Timeout | null = null;
+    
+    // For standard upload, simulate progress
+    if (!isChunkedUpload) {
+      progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval!);
+            return prev;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 200);
+    }
 
     try {
       await onSaveLead(videoBlob, comments);
       
-      // Complete progress
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      // Complete progress for standard upload
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      if (!isChunkedUpload) {
+        setUploadProgress(100);
+      }
       
       // Show success message with checkmark
       toast({ 
@@ -185,7 +201,9 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
       }, 500);
       
     } catch (error) {
-      clearInterval(progressInterval);
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
       setIsUploading(false);
       setUploadProgress(0);
       throw error;
@@ -215,15 +233,25 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
           {isUploading && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Загрузка видео...</span>
-                <span>{Math.round(uploadProgress)}%</span>
+                <span>
+                  {currentProgress > 0 && currentProgress < 100 ? 
+                    (externalUploadProgress !== undefined ? 'Загрузка большого файла...' : 'Загрузка видео...') : 
+                    'Подготовка к загрузке...'
+                  }
+                </span>
+                <span>{Math.round(currentProgress)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${uploadProgress}%` }}
+                  style={{ width: `${currentProgress}%` }}
                 ></div>
               </div>
+              {externalUploadProgress !== undefined && currentProgress > 0 && (
+                <div className="text-xs text-gray-500">
+                  Многочастная загрузка • Размер файла > 8MB
+                </div>
+              )}
             </div>
           )}
           

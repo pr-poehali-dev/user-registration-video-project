@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import { ChunkedUploader } from '@/utils/chunkedUpload';
 
 // Components
 import AuthForm from '@/components/AuthForm';
@@ -19,7 +20,8 @@ const API_URLS = {
   leads: 'https://functions.poehali.dev/a119ce14-9a5b-40de-b18f-3ef1f6dc7484',
   video: 'https://functions.poehali.dev/75e3022c-965a-4cd9-b5c1-bd179806e509',
   admin: 'https://functions.poehali.dev/bf64fc6c-c075-4df6-beb9-f5b527586fa1',
-  adminVideo: 'https://functions.poehali.dev/72f44b46-a11c-4ea3-addb-cb69aee5546e'
+  adminVideo: 'https://functions.poehali.dev/72f44b46-a11c-4ea3-addb-cb69aee5546e',
+  chunkedUpload: 'https://functions.poehali.dev/00f46d6e-5445-4f13-8032-e95041773736'
 };
 
 interface User {
@@ -44,6 +46,7 @@ const Index = () => {
   const [videoLeads, setVideoLeads] = useState<VideoLead[]>([]);
   const [activeTab, setActiveTab] = useState('record');
   const [loading, setLoading] = useState(false);
+  const [externalUploadProgress, setExternalUploadProgress] = useState<number | undefined>(undefined);
   const [archivePassword, setArchivePassword] = useState('');
   const [isArchiveUnlocked, setIsArchiveUnlocked] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -123,7 +126,79 @@ const Index = () => {
 
   const handleSaveLead = async (videoBlob: Blob, comments: string) => {
     setLoading(true);
+    
+    const videoSizeMB = videoBlob.size / (1024 * 1024);
+    console.log('Video file size:', videoSizeMB.toFixed(2), 'MB');
+    
+    try {
+      // Use chunked upload for files larger than 8MB
+      if (videoSizeMB > 8) {
+        console.log('Using chunked upload for large file');
+        return await handleChunkedUpload(videoBlob, comments);
+      } else {
+        console.log('Using standard upload for small file');
+        return await handleStandardUpload(videoBlob, comments);
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({ 
+        title: 'Ошибка', 
+        description: error.message || 'Не удалось сохранить лид', 
+        variant: 'destructive' 
+      });
+      setLoading(false);
+    }
+  };
 
+  const handleChunkedUpload = async (videoBlob: Blob, comments: string): Promise<void> => {
+    const uploader = new ChunkedUploader({
+      file: videoBlob,
+      title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
+      comments: comments,
+      token: token,
+      uploadUrl: API_URLS.chunkedUpload,
+      chunkSize: 5 * 1024 * 1024, // 5MB chunks
+      onProgress: (progress) => {
+        setExternalUploadProgress(progress);
+        console.log(`Upload progress: ${progress.toFixed(1)}%`);
+      },
+      onChunkUploaded: (chunk, total) => {
+        console.log(`Chunk ${chunk}/${total} uploaded`);
+      },
+      onComplete: async (result) => {
+        console.log('Chunked upload completed:', result);
+        setExternalUploadProgress(100);
+        
+        toast({ 
+          title: '✅ Большое видео успешно загружено', 
+          description: `Размер: ${(videoBlob.size / (1024 * 1024)).toFixed(1)}MB. Лид сохранен!`,
+          duration: 4000
+        });
+        
+        // Reload leads and cleanup
+        await loadUserLeads(token);
+        setTimeout(() => {
+          setLoading(false);
+          setExternalUploadProgress(undefined);
+        }, 1000);
+      },
+      onError: (error) => {
+        console.error('Chunked upload error:', error);
+        setLoading(false);
+        setExternalUploadProgress(undefined);
+        
+        toast({ 
+          title: 'Ошибка загрузки большого файла', 
+          description: error, 
+          variant: 'destructive' 
+        });
+      }
+    });
+
+    await uploader.upload();
+  };
+
+  const handleStandardUpload = async (videoBlob: Blob, comments: string): Promise<void> => {
     try {
       // Convert video blob to base64
       const reader = new FileReader();
@@ -362,6 +437,7 @@ const Index = () => {
             <VideoRecorder 
               onSaveLead={handleSaveLead}
               loading={loading}
+              externalUploadProgress={externalUploadProgress}
             />
           </TabsContent>
 
