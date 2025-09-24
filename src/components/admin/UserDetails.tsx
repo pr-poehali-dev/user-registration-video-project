@@ -122,23 +122,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                 <video 
                   src={videoUrl} 
                   controls 
-                  preload="auto"
-                  playsInline
-                  controlsList="nodownload"
                   className="w-full max-h-64 rounded-lg border"
-                  onLoadedMetadata={(e) => {
-                    // Принудительная загрузка метаданных для лучшей перемотки
-                    const video = e.target as HTMLVideoElement;
-                    if (video.duration > 0) {
-                      video.currentTime = 0.1;
-                      video.currentTime = 0;
-                    }
-                  }}
-                  onCanPlay={(e) => {
-                    // Дополнительная оптимизация после полной загрузки
-                    const video = e.target as HTMLVideoElement;
-                    video.playbackRate = 1.0; // Убеждаемся что скорость нормальная
-                  }}
                 />
               </div>
             )}

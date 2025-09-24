@@ -177,18 +177,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, leadTitle, classNam
         src={videoUrl} 
         controls 
         playsInline // Important for iOS
-        preload="auto" // Изменено с metadata на auto для лучшей перемотки
-        controlsList="nodownload" // Отключаем встроенную кнопку скачивания
-        disablePictureInPicture={false} // Разрешаем PiP для лучшего UX
+        preload="metadata"
         className="w-full max-h-64 rounded-lg border"
         style={{ maxWidth: '100%', height: 'auto' }}
-        onLoadedMetadata={() => {
-          // Принудительно загружаем метаданные для лучшей перемотки
-          if (videoRef.current) {
-            videoRef.current.currentTime = 0.1; // Микро-смещение для принудительной загрузки
-            videoRef.current.currentTime = 0;
-          }
-        }}
         onError={(e) => {
           console.error('Video playback error:', e);
           setIsSupported(false);
