@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "Get video by lead ID",
+      "method": "GET",
+      "path": "/?id=1",
+      "headers": {
+        "X-Auth-Token": "valid-jwt-token"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "video_url": "string",
+        "filename": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get video without auth",
+      "method": "GET",
+      "path": "/?id=1",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

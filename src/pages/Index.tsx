@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 
+// API URLs
+const API_URLS = {
+  auth: 'https://functions.poehali.dev/080ec769-925f-4132-8cd3-549c89bdc4c0',
+  leads: 'https://functions.poehali.dev/a119ce14-9a5b-40de-b18f-3ef1f6dc7484',
+  video: 'https://functions.poehali.dev/75e3022c-965a-4cd9-b5c1-bd179806e509'
+};
+
 interface User {
   id: string;
   email: string;
@@ -16,14 +23,16 @@ interface User {
 
 interface VideoLead {
   id: string;
-  videoUrl: string;
-  comments: string;
-  createdAt: string;
   title: string;
+  comments: string;
+  video_url?: string;
+  created_at: string;
+  video_filename?: string;
 }
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string>('');
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,25 +43,99 @@ const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [videoLeads, setVideoLeads] = useState<VideoLead[]>([]);
   const [activeTab, setActiveTab] = useState('record');
+  const [loading, setLoading] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
+  // Load token from localStorage on mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('auth_token');
+    const savedUser = localStorage.getItem('user_data');
+    
+    if (savedToken && savedUser) {
+      try {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
+        loadUserLeads(savedToken);
+      } catch (error) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+      }
+    }
+  }, []);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    if (isLogin) {
-      if (email === 'demo@example.com' && password === 'demo123') {
-        setUser({ id: '1', email, name: 'Demo User' });
-        toast({ title: 'Добро пожаловать!', description: 'Вы успешно вошли в систему' });
+    try {
+      const response = await fetch(API_URLS.auth, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: isLogin ? 'login' : 'register',
+          email: email.trim(),
+          password,
+          name: name.trim()
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setUser(data.user);
+        setToken(data.token);
+        
+        // Save to localStorage
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('user_data', JSON.stringify(data.user));
+        
+        toast({ 
+          title: isLogin ? 'Добро пожаловать!' : 'Регистрация успешна!',
+          description: isLogin ? 'Вы успешно вошли в систему' : 'Добро пожаловать на платформу'
+        });
+        
+        // Load user's leads
+        await loadUserLeads(data.token);
       } else {
-        toast({ title: 'Ошибка', description: 'Неверные данные для входа', variant: 'destructive' });
+        toast({ 
+          title: 'Ошибка', 
+          description: data.error || 'Неизвестная ошибка', 
+          variant: 'destructive' 
+        });
       }
-    } else {
-      setUser({ id: Date.now().toString(), email, name });
-      toast({ title: 'Регистрация успешна!', description: 'Добро пожаловать на платформу' });
+    } catch (error) {
+      toast({ 
+        title: 'Ошибка подключения', 
+        description: 'Не удалось связаться с сервером', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUserLeads = async (authToken: string) => {
+    try {
+      const response = await fetch(API_URLS.leads, {
+        method: 'GET',
+        headers: {
+          'X-Auth-Token': authToken,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setVideoLeads(data.leads || []);
+      }
+    } catch (error) {
+      console.error('Failed to load leads:', error);
     }
   };
 
@@ -124,28 +207,93 @@ const Index = () => {
       return;
     }
 
-    const newLead: VideoLead = {
-      id: Date.now().toString(),
-      videoUrl: videoUrl,
-      comments: comments,
-      createdAt: new Date().toLocaleDateString('ru-RU'),
-      title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`
-    };
+    setLoading(true);
 
-    setVideoLeads(prev => [newLead, ...prev]);
-    setComments('');
-    retakeVideo();
-    setActiveTab('archive');
-    
-    toast({ title: 'Лид сохранен!', description: 'Видео и комментарии добавлены в архив' });
+    try {
+      // Convert video blob to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Video = (reader.result as string).split(',')[1]; // Remove data URL prefix
+        
+        const response = await fetch(API_URLS.leads, {
+          method: 'POST',
+          headers: {
+            'X-Auth-Token': token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
+            comments: comments,
+            video_data: base64Video,
+            video_filename: 'recording.webm',
+            video_content_type: 'video/webm'
+          })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          toast({ title: 'Лид сохранен!', description: 'Видео и комментарии добавлены в архив' });
+          
+          // Reload leads
+          await loadUserLeads(token);
+          
+          // Clear form
+          setComments('');
+          retakeVideo();
+          setActiveTab('archive');
+        } else {
+          toast({ 
+            title: 'Ошибка сохранения', 
+            description: data.error || 'Не удалось сохранить лид', 
+            variant: 'destructive' 
+          });
+        }
+        setLoading(false);
+      };
+      
+      reader.readAsDataURL(videoBlob);
+    } catch (error) {
+      toast({ 
+        title: 'Ошибка', 
+        description: 'Не удалось сохранить лид', 
+        variant: 'destructive' 
+      });
+      setLoading(false);
+    }
+  };
+
+  const loadVideoForLead = async (leadId: string): Promise<string | null> => {
+    try {
+      const response = await fetch(`${API_URLS.video}?id=${leadId}`, {
+        method: 'GET',
+        headers: {
+          'X-Auth-Token': token
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.video_url || null;
+      }
+    } catch (error) {
+      console.error('Failed to load video:', error);
+    }
+    return null;
   };
 
   const logout = () => {
     setUser(null);
+    setToken('');
     setVideoLeads([]);
     setComments('');
     retakeVideo();
     setActiveTab('record');
+    
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+    
+    toast({ title: 'Выход выполнен', description: 'До свидания!' });
   };
 
   if (!user) {
@@ -180,7 +328,7 @@ const Index = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="demo@example.com"
+                  placeholder="example@mail.com"
                   required
                 />
               </div>
@@ -191,11 +339,14 @@ const Index = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="demo123"
+                  placeholder="Введите пароль"
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                ) : null}
                 {isLogin ? 'Войти' : 'Зарегистрироваться'}
               </Button>
             </form>
@@ -340,9 +491,13 @@ const Index = () => {
                   <Button 
                     onClick={saveLead} 
                     className="w-full bg-success hover:bg-success/90"
-                    disabled={!videoBlob || !comments.trim()}
+                    disabled={!videoBlob || !comments.trim() || loading}
                   >
-                    <Icon name="Save" size={16} className="mr-2" />
+                    {loading ? (
+                      <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                    ) : (
+                      <Icon name="Save" size={16} className="mr-2" />
+                    )}
                     Сохранить лид
                   </Button>
                 </CardContent>
@@ -369,33 +524,7 @@ const Index = () => {
             ) : (
               <div className="grid gap-6">
                 {videoLeads.map((lead) => (
-                  <Card key={lead.id} className="animate-fade-in">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">{lead.title}</CardTitle>
-                        <span className="text-sm text-muted-foreground">
-                          {lead.createdAt}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid lg:grid-cols-2 gap-4">
-                        <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                          <video
-                            src={lead.videoUrl}
-                            controls
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <h4 className="font-medium">Комментарии:</h4>
-                          <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md whitespace-pre-wrap">
-                            {lead.comments}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <VideoLeadCard key={lead.id} lead={lead} onLoadVideo={loadVideoForLead} />
                 ))}
               </div>
             )}
@@ -403,6 +532,73 @@ const Index = () => {
         </Tabs>
       </div>
     </div>
+  );
+};
+
+// Separate component for video lead cards to handle async video loading
+const VideoLeadCard: React.FC<{ 
+  lead: VideoLead; 
+  onLoadVideo: (leadId: string) => Promise<string | null>;
+}> = ({ lead, onLoadVideo }) => {
+  const [videoDataUrl, setVideoDataUrl] = useState<string | null>(null);
+  const [videoLoading, setVideoLoading] = useState(false);
+
+  const handleLoadVideo = async () => {
+    if (videoDataUrl) return; // Already loaded
+    
+    setVideoLoading(true);
+    const dataUrl = await onLoadVideo(lead.id);
+    if (dataUrl) {
+      setVideoDataUrl(dataUrl);
+    }
+    setVideoLoading(false);
+  };
+
+  return (
+    <Card className="animate-fade-in">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg">{lead.title}</CardTitle>
+          <span className="text-sm text-muted-foreground">
+            {lead.created_at}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid lg:grid-cols-2 gap-4">
+          <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
+            {videoDataUrl ? (
+              <video
+                src={videoDataUrl}
+                controls
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Button 
+                  onClick={handleLoadVideo} 
+                  variant="outline"
+                  disabled={videoLoading}
+                >
+                  {videoLoading ? (
+                    <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                  ) : (
+                    <Icon name="Play" size={16} className="mr-2" />
+                  )}
+                  Загрузить видео
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <h4 className="font-medium">Комментарии:</h4>
+            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md whitespace-pre-wrap">
+              {lead.comments}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,0 +1,35 @@
+{
+  "tests": [
+    {
+      "name": "Get user leads (requires auth)",
+      "method": "GET",
+      "headers": {
+        "X-Auth-Token": "valid-jwt-token"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "leads": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create new lead",
+      "method": "POST",
+      "headers": {
+        "X-Auth-Token": "valid-jwt-token"
+      },
+      "body": {
+        "title": "Test Lead",
+        "comments": "Test comments",
+        "video_data": "base64-encoded-video",
+        "video_filename": "test.webm"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "lead_id": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

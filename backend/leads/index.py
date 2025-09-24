@@ -1,0 +1,159 @@
+import json
+import os
+import jwt
+import psycopg2
+import base64
+from datetime import datetime
+from typing import Dict, Any, Optional
+
+def verify_token(token: str) -> Optional[Dict[str, Any]]:
+    '''Verify JWT token and return user data'''
+    try:
+        jwt_secret = os.environ.get('JWT_SECRET', 'default-secret-change-in-production')
+        decoded = jwt.decode(token, jwt_secret, algorithms=['HS256'])
+        return decoded
+    except:
+        return None
+
+def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+    '''
+    Business: Manage video leads (create, retrieve) with user authentication
+    Args: event with httpMethod, headers (X-Auth-Token), body with video/comments data
+    Returns: Lead data or list of user leads
+    '''
+    method: str = event.get('httpMethod', 'GET')
+    
+    # Handle CORS OPTIONS request
+    if method == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
+                'Access-Control-Max-Age': '86400'
+            },
+            'body': ''
+        }
+    
+    # Verify authentication
+    headers = event.get('headers', {})
+    auth_token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+    
+    if not auth_token:
+        return {
+            'statusCode': 401,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Authentication required'})
+        }
+    
+    user_data = verify_token(auth_token)
+    if not user_data:
+        return {
+            'statusCode': 401,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Invalid token'})
+        }
+    
+    user_id = user_data['user_id']
+    
+    try:
+        # Connect to database
+        db_url = os.environ.get('DATABASE_URL')
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor()
+        
+        if method == 'GET':
+            # Get user's leads
+            cursor.execute("""
+                SELECT id, title, comments, video_filename, video_content_type, created_at 
+                FROM video_leads 
+                WHERE user_id = %s 
+                ORDER BY created_at DESC
+            """, (user_id,))
+            
+            leads = []
+            for row in cursor.fetchall():
+                lead_id, title, comments, filename, content_type, created_at = row
+                leads.append({
+                    'id': lead_id,
+                    'title': title,
+                    'comments': comments,
+                    'video_filename': filename,
+                    'video_content_type': content_type,
+                    'created_at': created_at.strftime('%d.%m.%Y %H:%M') if created_at else '',
+                    'video_url': f'/backend/leads/video/{lead_id}'  # URL to get video data
+                })
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'leads': leads})
+            }
+        
+        elif method == 'POST':
+            # Create new lead
+            body_data = json.loads(event.get('body', '{}'))
+            title = body_data.get('title', '').strip()
+            comments = body_data.get('comments', '').strip()
+            video_base64 = body_data.get('video_data', '')  # Base64 encoded video
+            video_filename = body_data.get('video_filename', 'recording.webm')
+            video_content_type = body_data.get('video_content_type', 'video/webm')
+            
+            if not title or not comments or not video_base64:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Missing required fields'})
+                }
+            
+            # Decode base64 video data
+            try:
+                video_data = base64.b64decode(video_base64)
+            except:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Invalid video data'})
+                }
+            
+            # Save to database
+            cursor.execute("""
+                INSERT INTO video_leads 
+                (user_id, title, comments, video_data, video_filename, video_content_type)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id, created_at
+            """, (user_id, title, comments, video_data, video_filename, video_content_type))
+            
+            lead_id, created_at = cursor.fetchone()
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'success': True,
+                    'lead_id': lead_id,
+                    'created_at': created_at.strftime('%d.%m.%Y %H:%M')
+                })
+            }
+        
+        else:
+            return {
+                'statusCode': 405,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Method not allowed'})
+            }
+    
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': f'Server error: {str(e)}'})
+        }
+    
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
