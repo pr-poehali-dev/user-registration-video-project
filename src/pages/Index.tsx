@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,8 +44,32 @@ const Index = () => {
   const [videoLeads, setVideoLeads] = useState<VideoLead[]>([]);
   const [activeTab, setActiveTab] = useState('record');
   const [loading, setLoading] = useState(false);
+  const [archivePassword, setArchivePassword] = useState('');
+  const [isArchiveUnlocked, setIsArchiveUnlocked] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   
   const { toast } = useToast();
+
+  // Handle archive password check
+  const handleArchiveAccess = () => {
+    if (archivePassword === '955650') {
+      setIsArchiveUnlocked(true);
+      setShowPasswordDialog(false);
+      setActiveTab('archive');
+      toast({ title: 'Доступ разрешен', description: 'Добро пожаловать в архив' });
+    } else {
+      toast({ title: 'Неверный пароль', description: 'Попробуйте еще раз', variant: 'destructive' });
+      setArchivePassword('');
+    }
+  };
+
+  const handleArchiveTabClick = () => {
+    if (!isArchiveUnlocked) {
+      setShowPasswordDialog(true);
+    } else {
+      setActiveTab('archive');
+    }
+  };
 
   // Load token from localStorage on mount
   useEffect(() => {
@@ -217,7 +244,14 @@ const Index = () => {
               <Icon name="Video" size={16} />
               Запись лида
             </TabsTrigger>
-            <TabsTrigger value="archive" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="archive" 
+              className="flex items-center gap-2"
+              onClick={(e) => {
+                e.preventDefault();
+                handleArchiveTabClick();
+              }}
+            >
               <Icon name="Archive" size={16} />
               Архив ({videoLeads.length})
             </TabsTrigger>
@@ -233,14 +267,63 @@ const Index = () => {
 
           {/* Archive Tab */}
           <TabsContent value="archive" className="space-y-6">
-            <LeadsArchive 
-              videoLeads={videoLeads}
-              onCreateLead={handleCreateLead}
-              onLoadVideo={loadVideoForLead}
-            />
+            {isArchiveUnlocked ? (
+              <LeadsArchive 
+                videoLeads={videoLeads}
+                onCreateLead={handleCreateLead}
+                onLoadVideo={loadVideoForLead}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <Icon name="Lock" size={64} className="mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600">Для доступа к архиву необходимо ввести пароль</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Icon name="Lock" size={20} />
+              Доступ к архиву
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Введите пароль для доступа к архиву лидов:
+            </p>
+            <Input
+              type="password"
+              placeholder="Введите пароль"
+              value={archivePassword}
+              onChange={(e) => setArchivePassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleArchiveAccess();
+                }
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPasswordDialog(false);
+                  setArchivePassword('');
+                }}
+              >
+                Отмена
+              </Button>
+              <Button onClick={handleArchiveAccess}>
+                Войти
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

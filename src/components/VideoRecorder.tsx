@@ -184,7 +184,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
           
           <Button 
             onClick={handleSaveLead} 
-            className="w-full bg-success hover:bg-success/90"
+            className="w-full"
             disabled={!videoBlob || !comments.trim() || loading || isUploading}
           >
             {loading || isUploading ? (
