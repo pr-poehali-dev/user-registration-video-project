@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
@@ -34,6 +34,12 @@ const LeadItem: React.FC<LeadItemProps> = ({
   onDeleteLead,
   formatDate
 }) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  const handleDelete = async () => {
+    await onDeleteLead(lead.id, lead.title);
+    setIsDialogOpen(false);
+  };
   return (
     <div className="p-3 border rounded-lg">
       <div className="flex justify-between items-start mb-2">
@@ -74,7 +80,7 @@ const LeadItem: React.FC<LeadItemProps> = ({
               </Button>
             </>
           )}
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button
                 size="sm"
@@ -103,7 +109,7 @@ const LeadItem: React.FC<LeadItemProps> = ({
                 </DialogTrigger>
                 <Button
                   variant="destructive"
-                  onClick={() => onDeleteLead(lead.id, lead.title)}
+                  onClick={handleDelete}
                   disabled={deletingLeadId === lead.id}
                 >
                   {deletingLeadId === lead.id ? (
