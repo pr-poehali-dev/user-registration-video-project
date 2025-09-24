@@ -135,76 +135,8 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
   };
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      {/* Video Recording Block */}
-      <Card className="animate-scale-in">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Icon name="Camera" size={20} />
-            Запись видео
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
-            {!videoUrl ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <video
-                src={videoUrl}
-                controls
-                className="w-full h-full object-cover"
-              />
-            )}
-            
-            {!isRecording && !videoUrl && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                  <Icon name="Camera" size={48} className="mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-500">Нажмите "Начать запись"</p>
-                </div>
-              </div>
-            )}
-            
-            {isRecording && (
-              <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-500 text-white px-3 py-1 rounded-full">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">REC</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            {!isRecording && !videoUrl && (
-              <Button onClick={startVideoRecording} className="flex-1">
-                <Icon name="Play" size={16} className="mr-2" />
-                Начать запись
-              </Button>
-            )}
-            
-            {isRecording && (
-              <Button onClick={stopVideoRecording} variant="destructive" className="flex-1">
-                <Icon name="Square" size={16} className="mr-2" />
-                Остановить
-              </Button>
-            )}
-            
-            {videoUrl && (
-              <Button onClick={retakeVideo} variant="outline" className="flex-1">
-                <Icon name="RefreshCw" size={16} className="mr-2" />
-                Пересъемка
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Comments Block */}
+    <div className="flex flex-col gap-6">
+      {/* Comments Block - First on mobile */}
       <Card className="animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -217,7 +149,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
             placeholder="Опишите детали лида, контактную информацию, особые заметки..."
             value={comments}
             onChange={(e) => setComments(e.target.value)}
-            rows={8}
+            rows={6}
             className="resize-none"
           />
           
@@ -249,6 +181,72 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading }) =>
             )}
             {isUploading ? 'Загружаем...' : 'Сохранить лид'}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Video Recording Block - Second on mobile */}
+      <Card className="animate-scale-in">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Icon name="Camera" size={20} />
+            Контроль качества
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
+            {/* Hidden video element */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover opacity-0 absolute inset-0"
+            />
+            
+            {/* Fake cover - always visible */}
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-400">
+              <h1 className="text-black font-bold text-2xl md:text-4xl">IMPERIA PROMO</h1>
+            </div>
+            
+            {/* Playback video when available */}
+            {videoUrl && (
+              <video
+                src={videoUrl}
+                controls
+                className="w-full h-full object-cover relative z-10"
+              />
+            )}
+            
+            {isRecording && (
+              <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-500 text-white px-3 py-1 rounded-full z-20">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium">REC</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            {!isRecording && !videoUrl && (
+              <Button onClick={startVideoRecording} className="flex-1">
+                <Icon name="Play" size={16} className="mr-2" />
+                Начать запись
+              </Button>
+            )}
+            
+            {isRecording && (
+              <Button onClick={stopVideoRecording} variant="destructive" className="flex-1">
+                <Icon name="Square" size={16} className="mr-2" />
+                Остановить
+              </Button>
+            )}
+            
+            {videoUrl && (
+              <Button onClick={retakeVideo} variant="outline" className="flex-1">
+                <Icon name="RefreshCw" size={16} className="mr-2" />
+                Пересъемка
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
