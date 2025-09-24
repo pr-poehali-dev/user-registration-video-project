@@ -128,13 +128,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
       if (response.ok) {
         const data = await response.json();
         if (data.video_url) {
-          // Create a temporary link to download the video
+          // Convert data URL to blob for proper download
+          const dataUrl = data.video_url;
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          
+          // Create blob URL and download
+          const blobUrl = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.href = data.video_url;
-          link.download = `${userName}_${leadTitle}_${leadId}.webm`;
+          link.href = blobUrl;
+          
+          // Clean filename for download
+          const cleanUserName = userName.replace(/[^a-zA-Z0-9]/g, '_');
+          const cleanTitle = leadTitle.replace(/[^a-zA-Z0-9]/g, '_');
+          link.download = `${cleanUserName}_${cleanTitle}_${leadId}.webm`;
+          
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
+          
+          // Clean up blob URL
+          URL.revokeObjectURL(blobUrl);
           
           toast({
             title: 'Скачивание начато',
@@ -147,6 +161,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
             variant: 'destructive'
           });
         }
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: 'Ошибка доступа',
+          description: errorData.error || 'Не удалось получить видео',
+          variant: 'destructive'
+        });
       }
     } catch (error) {
       toast({

@@ -1,7 +1,7 @@
 {
   "tests": [
     {
-      "name": "Access denied without token",
+      "name": "Access denied without admin role",
       "method": "GET",
       "expectedStatus": 401,
       "expectedBody": {

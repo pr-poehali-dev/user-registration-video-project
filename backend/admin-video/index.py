@@ -16,7 +16,7 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Serve video files from database with authentication (admin can access any video)
+    Business: Admin video access - serve any video file from database
     Args: event with httpMethod, query params (id), headers (X-Auth-Token)
     Returns: Video file data as base64 or error
     '''
@@ -57,7 +57,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Authentication token required'})
             }
         
-        # Verify token
+        # Verify token and check admin role
         user_data = verify_token(auth_token)
         if not user_data:
             return {
@@ -67,10 +67,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Invalid token'})
             }
         
+        user_role = user_data.get('role', 'user')
+        if user_role != 'admin':
+            return {
+                'statusCode': 403,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
+                'body': json.dumps({'error': 'Access denied. Admin role required'})
+            }
+        
         # Get lead ID from query parameters
         query_params = event.get('queryStringParameters', {}) or {}
         lead_id = query_params.get('id')
-        user_id = user_data.get('user_id')
         
         if not lead_id:
             return {
@@ -85,23 +93,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(db_url)
         cursor = conn.cursor()
         
-        # Get video data (admin can access any video, users only their own)
-        user_role = user_data.get('role', 'user')
-        
-        if user_role == 'admin':
-            # Admin can access any video
-            cursor.execute("""
-                SELECT video_data, video_content_type, video_filename
-                FROM video_leads 
-                WHERE id = %s
-            """, (lead_id,))
-        else:
-            # Regular user can only access their own videos
-            cursor.execute("""
-                SELECT video_data, video_content_type, video_filename
-                FROM video_leads 
-                WHERE id = %s AND user_id = %s
-            """, (lead_id, user_id))
+        # Admin can access any video
+        cursor.execute("""
+            SELECT video_data, video_content_type, video_filename
+            FROM video_leads 
+            WHERE id = %s
+        """, (lead_id,))
         
         result = cursor.fetchone()
         if not result:
@@ -109,7 +106,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'statusCode': 404,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'isBase64Encoded': False,
-                'body': json.dumps({'error': 'Video not found or access denied'})
+                'body': json.dumps({'error': 'Video not found'})
             }
         
         video_data, content_type, filename = result
