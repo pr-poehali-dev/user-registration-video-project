@@ -90,6 +90,15 @@ export const useLeadUploadHandler = ({
   const handleStandardUpload = async (videoBlob: Blob, comments: string): Promise<void> => {
     const totalMB = videoBlob.size / (1024 * 1024);
     
+    // For Android Chrome, use chunked upload for files > 2MB to avoid memory issues
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isChrome = /Chrome/i.test(navigator.userAgent);
+    
+    if (isAndroid && isChrome && totalMB > 2) {
+      console.log('Android Chrome detected, using chunked upload for', totalMB.toFixed(1), 'MB file');
+      return await handleChunkedUpload(videoBlob, comments);
+    }
+    
     // Simulate progress for standard upload
     let simulatedProgress = 0;
     const progressInterval = setInterval(() => {
@@ -106,7 +115,7 @@ export const useLeadUploadHandler = ({
     }, 300);
     
     try {
-      // Convert video blob to base64
+      // Convert video blob to base64 with memory optimization for mobile
       const reader = new FileReader();
       reader.onloadend = async () => {
         const result = reader.result as string;
@@ -140,20 +149,20 @@ export const useLeadUploadHandler = ({
         console.log('Comments:', comments);
         console.log('Base64 video length:', base64Video.length);
         
-        // Check file size limits
+        // Check file size limits  
         const videoSizeMB = videoBlob.size / (1024 * 1024);
         const base64SizeMB = (base64Video.length * 3) / (4 * 1024 * 1024); // base64 is ~33% larger
         console.log('Video blob size:', videoBlob.size, 'bytes (', videoSizeMB.toFixed(2), 'MB)');
         console.log('Base64 size estimate:', base64SizeMB.toFixed(2), 'MB');
         
-        // Warn if approaching limits
-        if (videoSizeMB > 8) {
-          console.warn('Video size approaching Cloud Function limits!');
-          toast({ 
-            title: '⚠️ Большой размер видео', 
-            description: `Размер: ${videoSizeMB.toFixed(1)}MB. Это может вызвать проблемы с загрузкой.`, 
-            variant: 'destructive' 
-          });
+        // Additional mobile device checks
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        console.log('Device info - Android:', isAndroid, 'Mobile:', isMobile);
+        
+        // More conservative limits for mobile devices
+        if (isMobile && videoSizeMB > 5) {
+          console.warn('Large video on mobile device - may cause memory issues');
         }
         
         const requestBody = {
@@ -166,9 +175,13 @@ export const useLeadUploadHandler = ({
         
         console.log('Request body keys:', Object.keys(requestBody));
         
-        // Create fetch with timeout
+        // Create fetch with longer timeout for mobile devices and better error handling
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        const timeoutDuration = isMobile ? 60000 : 30000; // 60 seconds for mobile, 30 for desktop
+        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+        
+        console.log('Sending POST request with timeout:', timeoutDuration / 1000, 'seconds');
         
         const response = await fetch(apiUrls.leads, {
           method: 'POST',
@@ -179,6 +192,8 @@ export const useLeadUploadHandler = ({
           body: JSON.stringify(requestBody),
           signal: controller.signal
         });
+        
+        console.log('POST request completed, response received');
         
         clearTimeout(timeoutId);
 
@@ -241,16 +256,22 @@ export const useLeadUploadHandler = ({
       let errorMessage = 'Не удалось сохранить лид';
       
       if (error.name === 'AbortError') {
-        errorMessage = 'Превышено время ожидания (30 сек) - попробуйте еще раз';
+        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        const timeoutSecs = isMobile ? 60 : 30;
+        errorMessage = `Превышено время ожидания (${timeoutSecs} сек). На мобильных устройствах попробуйте уменьшить размер видео.`;
       } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        errorMessage = 'Ошибка сети - проверьте подключение к интернету';
+        errorMessage = 'Ошибка сети. Проверьте интернет-соединение или попробуйте записать более короткое видео.';
       } else if (error.message.includes('Invalid JSON')) {
-        errorMessage = 'Сервер вернул некорректный ответ';
+        errorMessage = 'Сервер вернул некорректный ответ. Возможно, файл слишком большой для загрузки.';
       } else if (error.message.includes('timeout')) {
-        errorMessage = 'Превышено время ожидания - попробуйте еще раз';
+        errorMessage = 'Превышено время ожидания. Попробуйте записать более короткое видео.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Ошибка загрузки. На Android может помочь запись более короткого видео (до 30 сек).';
       } else if (error.message) {
         errorMessage = error.message;
       }
+      
+      console.error('Mobile-optimized error handling:', errorMessage);
       
       clearInterval(progressInterval);
       toast({ 
@@ -266,12 +287,25 @@ export const useLeadUploadHandler = ({
     const videoSizeMB = videoBlob.size / (1024 * 1024);
     console.log('Video file size:', videoSizeMB.toFixed(2), 'MB');
     
-    // Use chunked upload for files larger than 8MB
-    if (videoSizeMB > 8) {
-      console.log('Using chunked upload for large file');
+    // Detect mobile devices
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    
+    console.log('Device detection - Android:', isAndroid, 'Mobile:', isMobile);
+    
+    // Use chunked upload for:
+    // - Files larger than 8MB (desktop)
+    // - Files larger than 2MB on Android Chrome (memory issues)
+    // - Files larger than 5MB on other mobile devices
+    const shouldUseChunked = videoSizeMB > 8 || 
+                           (isAndroid && videoSizeMB > 2) || 
+                           (isMobile && videoSizeMB > 5);
+    
+    if (shouldUseChunked) {
+      console.log('Using chunked upload - Size:', videoSizeMB.toFixed(1), 'MB, Mobile:', isMobile);
       await handleChunkedUpload(videoBlob, comments);
     } else {
-      console.log('Using standard upload for small file');
+      console.log('Using standard upload - Size:', videoSizeMB.toFixed(1), 'MB');
       await handleStandardUpload(videoBlob, comments);
     }
   };
