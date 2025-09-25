@@ -32,13 +32,28 @@ export const useLeadUploadHandler = ({
   const handleChunkedUpload = async (videoBlob: Blob, comments: string): Promise<void> => {
     const totalMB = videoBlob.size / (1024 * 1024);
     
+    // Optimize chunk size for Android Chrome and mobile devices
+    const isAndroidDevice = /Android/i.test(navigator.userAgent);
+    const isAndroidChrome = isAndroidDevice && /Chrome/i.test(navigator.userAgent);
+    const isMobileDevice = /Mobi|Android/i.test(navigator.userAgent);
+    
+    // Smaller chunks for better memory management on mobile
+    let chunkSize = 5 * 1024 * 1024; // 5MB default
+    if (isAndroidChrome) {
+      chunkSize = 1 * 1024 * 1024; // 1MB for Android Chrome
+    } else if (isMobileDevice) {
+      chunkSize = 2 * 1024 * 1024; // 2MB for other mobile
+    }
+    
+    console.log(`Using chunked upload with ${(chunkSize / (1024 * 1024)).toFixed(1)}MB chunks for ${isAndroidChrome ? 'Android Chrome' : isMobileDevice ? 'mobile' : 'desktop'}`);
+    
     const uploader = new ChunkedUploader({
       file: videoBlob,
       title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
       comments: comments,
       token: token,
       uploadUrl: apiUrls.chunkedUpload,
-      chunkSize: 5 * 1024 * 1024, // 5MB chunks
+      chunkSize: chunkSize,
       onProgress: (progress) => {
         onProgress(progress);
         const uploadedMB = (progress / 100) * totalMB;
@@ -155,16 +170,24 @@ export const useLeadUploadHandler = ({
         console.log('Video blob size:', videoBlob.size, 'bytes (', videoSizeMB.toFixed(2), 'MB)');
         console.log('Base64 size estimate:', base64SizeMB.toFixed(2), 'MB');
         
-        // Additional mobile device checks
+        // Check device and decide upload strategy
         const isAndroidDevice = /Android/i.test(navigator.userAgent);
+        const isAndroidChrome = isAndroidDevice && /Chrome/i.test(navigator.userAgent);
         const isMobileDevice = /Mobi|Android/i.test(navigator.userAgent);
-        console.log('Device info - Android:', isAndroidDevice, 'Mobile:', isMobileDevice);
         
-        // More conservative limits for mobile devices
-        if (isMobileDevice && videoSizeMB > 5) {
-          console.warn('Large video on mobile device - may cause memory issues');
+        console.log('Device info - Android:', isAndroidDevice, 'Chrome:', /Chrome/i.test(navigator.userAgent), 'Mobile:', isMobileDevice);
+        console.log('File size:', videoSizeMB.toFixed(2), 'MB');
+        
+        // Use chunked upload for Android Chrome files >2MB OR any mobile files >5MB
+        const shouldUseChunkedUpload = (isAndroidChrome && videoSizeMB > 2) || (isMobileDevice && videoSizeMB > 5);
+        
+        if (shouldUseChunkedUpload) {
+          console.log('Using chunked upload for large mobile file');
+          return await handleChunkedUpload(videoBlob, comments);
         }
         
+        // Standard upload for smaller files
+        console.log('Using standard upload');
         const requestBody = {
           title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
           comments: comments,
@@ -175,9 +198,9 @@ export const useLeadUploadHandler = ({
         
         console.log('Request body keys:', Object.keys(requestBody));
         
-        // Create fetch with longer timeout for mobile devices and better error handling
+        // Create fetch with longer timeout for mobile devices  
         const controller = new AbortController();
-        const timeoutDuration = isMobileDevice ? 60000 : 30000; // 60 seconds for mobile, 30 for desktop
+        const timeoutDuration = isMobileDevice ? 90000 : 45000; // 90 seconds for mobile, 45 for desktop
         const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
         
         console.log('Sending POST request with timeout:', timeoutDuration / 1000, 'seconds');
@@ -292,19 +315,26 @@ export const useLeadUploadHandler = ({
     
     console.log('Device detection - Android:', isAndroid, 'Mobile:', isMobile);
     
+    // Detect Android Chrome specifically
+    const isAndroidChrome = isAndroid && /Chrome/i.test(navigator.userAgent);
+    
     // Use chunked upload for:
     // - Files larger than 8MB (desktop)
-    // - Files larger than 2MB on Android Chrome (memory issues)
+    // - Files larger than 1MB on Android Chrome (severe memory issues)
+    // - Files larger than 2MB on other Android devices  
     // - Files larger than 5MB on other mobile devices
     const shouldUseChunked = videoSizeMB > 8 || 
+                           (isAndroidChrome && videoSizeMB > 1) ||
                            (isAndroid && videoSizeMB > 2) || 
                            (isMobile && videoSizeMB > 5);
     
+    console.log('Upload decision - Size:', videoSizeMB.toFixed(1), 'MB, Android:', isAndroid, 'AndroidChrome:', isAndroidChrome, 'Mobile:', isMobile, 'UseChunked:', shouldUseChunked);
+    
     if (shouldUseChunked) {
-      console.log('Using chunked upload - Size:', videoSizeMB.toFixed(1), 'MB, Mobile:', isMobile);
+      console.log('🔄 Using chunked upload for', isAndroidChrome ? 'Android Chrome' : (isAndroid ? 'Android' : 'mobile'), 'device');
       await handleChunkedUpload(videoBlob, comments);
     } else {
-      console.log('Using standard upload - Size:', videoSizeMB.toFixed(1), 'MB');
+      console.log('📤 Using standard upload');
       await handleStandardUpload(videoBlob, comments);
     }
   };

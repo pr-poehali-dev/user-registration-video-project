@@ -70,6 +70,13 @@ export class ChunkedUploader {
         
         const progress = ((i + 1) / this.totalChunks) * 100;
         this.options.onProgress?.(progress);
+        
+        // Add delay between chunks for Android Chrome to prevent memory issues
+        if (i < this.totalChunks - 1) {
+          const isAndroidChrome = /Android/i.test(navigator.userAgent) && /Chrome/i.test(navigator.userAgent);
+          const delay = isAndroidChrome ? 1000 : 100; // 1s for Android Chrome, 100ms for others
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
 
       console.log('All chunks uploaded successfully');
@@ -161,21 +168,44 @@ export class ChunkedUploader {
         const base64Chunk = await this.blobToBase64(chunk);
         const chunkHash = await this.calculateMD5(chunk);
 
-        const response = await fetch(this.options.uploadUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Auth-Token': this.options.token
-          },
-          body: JSON.stringify({
-            action: 'upload_chunk',
-            upload_id: this.uploadId,
-            chunk_index: chunkIndex,
-            chunk_data: base64Chunk,
-            chunk_hash: chunkHash
-          }),
-          signal: this.abortController?.signal
-        });
+        // Create per-chunk timeout for mobile devices
+        const isAndroidDevice = /Android/i.test(navigator.userAgent);
+        const isAndroidChrome = isAndroidDevice && /Chrome/i.test(navigator.userAgent);
+        const isMobileDevice = /Mobi|Android/i.test(navigator.userAgent);
+        
+        // Longer timeout for mobile devices, especially Android Chrome
+        const timeoutMs = isAndroidChrome ? 90000 : (isMobileDevice ? 60000 : 30000);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        
+        let response;
+        try {
+          response = await fetch(this.options.uploadUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Auth-Token': this.options.token,
+              'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+              action: 'upload_chunk',
+              upload_id: this.uploadId,
+              chunk_index: chunkIndex,
+              chunk_data: base64Chunk,
+              chunk_hash: chunkHash
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId);
+          if (fetchError.name === 'AbortError') {
+            throw new Error(`Chunk ${chunkIndex} upload timeout (${timeoutMs/1000}s) - try reducing video size`);
+          }
+          throw fetchError;
+        }
 
         if (!response.ok) {
           const error = await response.json();
