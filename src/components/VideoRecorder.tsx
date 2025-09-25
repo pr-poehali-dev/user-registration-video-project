@@ -149,56 +149,8 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
       return;
     }
 
-    setIsUploading(true);
-    setUploadProgress(0);
-    
-    // Check if this will be a chunked upload
-    const videoSizeMB = videoBlob.size / (1024 * 1024);
-    const isChunkedUpload = videoSizeMB > 8;
-    
-    let progressInterval: NodeJS.Timeout | null = null;
-    
-    // For standard upload, simulate progress
-    if (!isChunkedUpload) {
-      progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval!);
-            return prev;
-          }
-          return prev + Math.random() * 15;
-        });
-      }, 200);
-    }
-
-    try {
-      await onSaveLead(videoBlob, comments);
-      
-      // Complete progress for standard upload
-      if (progressInterval) {
-        clearInterval(progressInterval);
-      }
-      if (!isChunkedUpload) {
-        setUploadProgress(100);
-      }
-      
-      // Success will be handled by upload page
-      
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-        setComments('');
-        retakeVideo();
-      }, 500);
-      
-    } catch (error) {
-      if (progressInterval) {
-        clearInterval(progressInterval);
-      }
-      setIsUploading(false);
-      setUploadProgress(0);
-      throw error;
-    }
+    // Pass data to parent for upload page handling
+    await onSaveLead(videoBlob, comments);
   };
 
   return (

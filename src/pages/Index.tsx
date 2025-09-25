@@ -49,6 +49,8 @@ const Index = () => {
     totalMB: number;
     uploadType: 'standard' | 'chunked';
   } | null>(null);
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [comments, setComments] = useState('');
   const [archivePassword, setArchivePassword] = useState('');
   const [showUploadPage, setShowUploadPage] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
@@ -120,27 +122,12 @@ const Index = () => {
   });
 
   const handleSaveLead = async (videoBlob: Blob, comments: string) => {
+    // Store video data and show upload page
+    setVideoBlob(videoBlob);
+    setComments(comments);
     setShowUploadPage(true);
     setUploadComplete(false);
-    setLoading(true);
-    
-    try {
-      await uploadLead(videoBlob, comments);
-      
-      // Show success
-      setUploadComplete(true);
-      setLoading(false);
-      
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      toast({ 
-        title: 'Ошибка', 
-        description: error.message || 'Не удалось сохранить лид', 
-        variant: 'destructive' 
-      });
-      setLoading(false);
-      setShowUploadPage(false);
-    }
+    setLoading(false);
   };
 
   const loadVideoForLead = async (leadId: string): Promise<string | null> => {
@@ -183,6 +170,8 @@ const Index = () => {
     setUploadComplete(false);
     setExternalUploadProgress(undefined);
     setUploadData(null);
+    setVideoBlob(null);
+    setComments('');
     setActiveTab('record');
   };
 
@@ -239,12 +228,14 @@ const Index = () => {
   if (showUploadPage) {
     return (
       <UploadPage
-        progress={uploadData?.progress ?? externalUploadProgress ?? 0}
-        isComplete={uploadComplete}
         onNewLead={handleNewLead}
+        onSaveLead={uploadLead}
+        videoBlob={videoBlob}
+        comments={comments}
         uploadedMB={uploadData?.uploadedMB ?? 0}
         totalMB={uploadData?.totalMB ?? 0}
         uploadType={uploadData?.uploadType ?? 'standard'}
+        progress={uploadData?.progress ?? externalUploadProgress ?? 0}
       />
     );
   }
