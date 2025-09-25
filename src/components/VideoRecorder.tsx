@@ -105,7 +105,6 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
       mediaRecorder.start(1000); // Собираем данные каждые 1000мс
       setIsRecording(true);
       console.log('MediaRecorder started with mimeType:', mediaRecorder.mimeType);
-      toast({ title: 'Запись началась', description: 'Записываем видео с задней камеры' });
     } catch (error: any) {
       let errorMessage = 'Не удалось получить доступ к камере';
       
@@ -121,7 +120,6 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      toast({ title: 'Запись завершена', description: 'Видео готово к просмотру' });
     }
   };
 
@@ -144,12 +142,10 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
     setVideoBlob(null);
     setVideoUrl('');
     setIsRecording(false);
-    toast({ title: 'Готов к пересъемке', description: 'Можете записать новое видео' });
   };
 
   const handleSaveLead = async () => {
     if (!videoBlob || !comments.trim()) {
-      toast({ title: 'Заполните все поля', description: 'Нужно записать видео и добавить комментарий', variant: 'destructive' });
       return;
     }
 
@@ -186,12 +182,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
         setUploadProgress(100);
       }
       
-      // Show success message with checkmark
-      toast({ 
-        title: '✅ Лид успешно отправлен', 
-        description: 'Видео и комментарии сохранены в системе',
-        duration: 3000
-      });
+      // Success will be handled by upload page
       
       setTimeout(() => {
         setIsUploading(false);
@@ -247,11 +238,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
                   style={{ width: `${currentProgress}%` }}
                 ></div>
               </div>
-              {externalUploadProgress !== undefined && currentProgress > 0 && (
-                <div className="text-xs text-gray-500">
-                  Многочастная загрузка • Размер файла &gt; 8MB
-                </div>
-              )}
+
             </div>
           )}
           

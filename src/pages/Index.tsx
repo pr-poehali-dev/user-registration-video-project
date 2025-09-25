@@ -13,6 +13,7 @@ import AppHeader from '@/components/AppHeader';
 import VideoRecorder from '@/components/VideoRecorder';
 import LeadsArchive from '@/components/LeadsArchive';
 import AdminPanel from '@/components/AdminPanel';
+import UploadPage from '@/components/UploadPage';
 
 // API URLs
 const API_URLS = {
@@ -48,6 +49,8 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [externalUploadProgress, setExternalUploadProgress] = useState<number | undefined>(undefined);
   const [archivePassword, setArchivePassword] = useState('');
+  const [showUploadPage, setShowUploadPage] = useState(false);
+  const [uploadComplete, setUploadComplete] = useState(false);
   const [isArchiveUnlocked, setIsArchiveUnlocked] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   
@@ -125,6 +128,8 @@ const Index = () => {
   };
 
   const handleSaveLead = async (videoBlob: Blob, comments: string) => {
+    setShowUploadPage(true);
+    setUploadComplete(false);
     setLoading(true);
     
     const videoSizeMB = videoBlob.size / (1024 * 1024);
@@ -134,11 +139,16 @@ const Index = () => {
       // Use chunked upload for files larger than 8MB
       if (videoSizeMB > 8) {
         console.log('Using chunked upload for large file');
-        return await handleChunkedUpload(videoBlob, comments);
+        await handleChunkedUpload(videoBlob, comments);
       } else {
         console.log('Using standard upload for small file');
-        return await handleStandardUpload(videoBlob, comments);
+        await handleStandardUpload(videoBlob, comments);
       }
+      
+      // Show success
+      setUploadComplete(true);
+      setLoading(false);
+      
     } catch (error: any) {
       console.error('Upload error:', error);
       toast({ 
@@ -147,6 +157,7 @@ const Index = () => {
         variant: 'destructive' 
       });
       setLoading(false);
+      setShowUploadPage(false);
     }
   };
 
@@ -169,23 +180,17 @@ const Index = () => {
         console.log('Chunked upload completed:', result);
         setExternalUploadProgress(100);
         
-        toast({ 
-          title: '✅ Большое видео успешно загружено', 
-          description: `Размер: ${(videoBlob.size / (1024 * 1024)).toFixed(1)}MB. Лид сохранен!`,
-          duration: 4000
-        });
-        
         // Reload leads and cleanup
         await loadUserLeads(token);
         setTimeout(() => {
-          setLoading(false);
           setExternalUploadProgress(undefined);
-        }, 1000);
+        }, 500);
       },
       onError: (error) => {
         console.error('Chunked upload error:', error);
         setLoading(false);
         setExternalUploadProgress(undefined);
+        setShowUploadPage(false);
         
         toast({ 
           title: 'Ошибка загрузки большого файла', 
@@ -296,16 +301,14 @@ const Index = () => {
         if (response.ok && data.success) {
           // Reload leads
           await loadUserLeads(token);
-          
-          // Stay on record tab - don't switch to archive
         } else {
           toast({ 
             title: 'Ошибка сохранения', 
             description: data.error || 'Не удалось сохранить лид', 
             variant: 'destructive' 
           });
+          throw new Error(data.error || 'Не удалось сохранить лид');
         }
-        setLoading(false);
       };
       
       reader.onerror = (error) => {
@@ -382,6 +385,13 @@ const Index = () => {
     setActiveTab('record');
   };
 
+  const handleNewLead = () => {
+    setShowUploadPage(false);
+    setUploadComplete(false);
+    setExternalUploadProgress(undefined);
+    setActiveTab('record');
+  };
+
   if (!user) {
     return (
       <AuthForm 
@@ -402,6 +412,17 @@ const Index = () => {
           videoApiUrl={API_URLS.adminVideo}
         />
       </div>
+    );
+  }
+
+  // Show upload page when uploading
+  if (showUploadPage) {
+    return (
+      <UploadPage
+        progress={externalUploadProgress ?? 0}
+        isComplete={uploadComplete}
+        onNewLead={handleNewLead}
+      />
     );
   }
 
