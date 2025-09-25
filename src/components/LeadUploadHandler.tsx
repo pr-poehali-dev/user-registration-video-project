@@ -156,12 +156,12 @@ export const useLeadUploadHandler = ({
         console.log('Base64 size estimate:', base64SizeMB.toFixed(2), 'MB');
         
         // Additional mobile device checks
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-        console.log('Device info - Android:', isAndroid, 'Mobile:', isMobile);
+        const isAndroidDevice = /Android/i.test(navigator.userAgent);
+        const isMobileDevice = /Mobi|Android/i.test(navigator.userAgent);
+        console.log('Device info - Android:', isAndroidDevice, 'Mobile:', isMobileDevice);
         
         // More conservative limits for mobile devices
-        if (isMobile && videoSizeMB > 5) {
+        if (isMobileDevice && videoSizeMB > 5) {
           console.warn('Large video on mobile device - may cause memory issues');
         }
         
@@ -177,8 +177,7 @@ export const useLeadUploadHandler = ({
         
         // Create fetch with longer timeout for mobile devices and better error handling
         const controller = new AbortController();
-        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-        const timeoutDuration = isMobile ? 60000 : 30000; // 60 seconds for mobile, 30 for desktop
+        const timeoutDuration = isMobileDevice ? 60000 : 30000; // 60 seconds for mobile, 30 for desktop
         const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
         
         console.log('Sending POST request with timeout:', timeoutDuration / 1000, 'seconds');
@@ -256,8 +255,8 @@ export const useLeadUploadHandler = ({
       let errorMessage = 'Не удалось сохранить лид';
       
       if (error.name === 'AbortError') {
-        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-        const timeoutSecs = isMobile ? 60 : 30;
+        const isMobileForError = /Mobi|Android/i.test(navigator.userAgent);
+        const timeoutSecs = isMobileForError ? 60 : 30;
         errorMessage = `Превышено время ожидания (${timeoutSecs} сек). На мобильных устройствах попробуйте уменьшить размер видео.`;
       } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
         errorMessage = 'Ошибка сети. Проверьте интернет-соединение или попробуйте записать более короткое видео.';
