@@ -2,6 +2,13 @@ import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ChunkedUploader } from '@/utils/chunkedUpload';
 
+interface UploadProgressData {
+  progress: number;
+  uploadedMB: number;
+  totalMB: number;
+  uploadType: 'standard' | 'chunked';
+}
+
 interface LeadUploadHandlerProps {
   token: string;
   apiUrls: {
@@ -9,6 +16,7 @@ interface LeadUploadHandlerProps {
     chunkedUpload: string;
   };
   onProgress: (progress: number | undefined) => void;
+  onUploadData: (data: UploadProgressData | null) => void;
   onLoadLeads: (token: string) => Promise<void>;
 }
 
@@ -16,11 +24,14 @@ export const useLeadUploadHandler = ({
   token, 
   apiUrls, 
   onProgress, 
+  onUploadData,
   onLoadLeads 
 }: LeadUploadHandlerProps) => {
   const { toast } = useToast();
 
   const handleChunkedUpload = async (videoBlob: Blob, comments: string): Promise<void> => {
+    const totalMB = videoBlob.size / (1024 * 1024);
+    
     const uploader = new ChunkedUploader({
       file: videoBlob,
       title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
@@ -30,7 +41,14 @@ export const useLeadUploadHandler = ({
       chunkSize: 5 * 1024 * 1024, // 5MB chunks
       onProgress: (progress) => {
         onProgress(progress);
-        console.log(`Upload progress: ${progress.toFixed(1)}%`);
+        const uploadedMB = (progress / 100) * totalMB;
+        onUploadData({
+          progress,
+          uploadedMB,
+          totalMB,
+          uploadType: 'chunked'
+        });
+        console.log(`Upload progress: ${progress.toFixed(1)}% (${uploadedMB.toFixed(1)}/${totalMB.toFixed(1)} МБ)`);
       },
       onChunkUploaded: (chunk, total) => {
         console.log(`Chunk ${chunk}/${total} uploaded`);
@@ -38,16 +56,24 @@ export const useLeadUploadHandler = ({
       onComplete: async (result) => {
         console.log('Chunked upload completed:', result);
         onProgress(100);
+        onUploadData({
+          progress: 100,
+          uploadedMB: totalMB,
+          totalMB,
+          uploadType: 'chunked'
+        });
         
         // Reload leads and cleanup
         await onLoadLeads(token);
         setTimeout(() => {
           onProgress(undefined);
+          onUploadData(null);
         }, 500);
       },
       onError: (error) => {
         console.error('Chunked upload error:', error);
         onProgress(undefined);
+        onUploadData(null);
         
         toast({ 
           title: 'Ошибка загрузки большого файла', 
@@ -62,6 +88,23 @@ export const useLeadUploadHandler = ({
   };
 
   const handleStandardUpload = async (videoBlob: Blob, comments: string): Promise<void> => {
+    const totalMB = videoBlob.size / (1024 * 1024);
+    
+    // Simulate progress for standard upload
+    let simulatedProgress = 0;
+    const progressInterval = setInterval(() => {
+      if (simulatedProgress < 90) {
+        simulatedProgress += Math.random() * 15;
+        onProgress(simulatedProgress);
+        onUploadData({
+          progress: simulatedProgress,
+          uploadedMB: (simulatedProgress / 100) * totalMB,
+          totalMB,
+          uploadType: 'standard'
+        });
+      }
+    }, 300);
+    
     try {
       // Convert video blob to base64
       const reader = new FileReader();
@@ -155,9 +198,20 @@ export const useLeadUploadHandler = ({
         }
         
         if (response.ok && data.success) {
+          // Complete progress
+          clearInterval(progressInterval);
+          onProgress(100);
+          onUploadData({
+            progress: 100,
+            uploadedMB: totalMB,
+            totalMB,
+            uploadType: 'standard'
+          });
+          
           // Reload leads
           await onLoadLeads(token);
         } else {
+          clearInterval(progressInterval);
           toast({ 
             title: 'Ошибка сохранения', 
             description: data.error || 'Не удалось сохранить лид', 
@@ -169,6 +223,7 @@ export const useLeadUploadHandler = ({
       
       reader.onerror = (error) => {
         console.error('FileReader error:', error);
+        clearInterval(progressInterval);
         toast({ 
           title: 'Ошибка чтения файла', 
           description: 'Не удалось прочитать видео файл', 
@@ -197,6 +252,7 @@ export const useLeadUploadHandler = ({
         errorMessage = error.message;
       }
       
+      clearInterval(progressInterval);
       toast({ 
         title: 'Ошибка', 
         description: errorMessage, 

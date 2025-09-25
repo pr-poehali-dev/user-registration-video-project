@@ -43,6 +43,12 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('record');
   const [loading, setLoading] = useState(false);
   const [externalUploadProgress, setExternalUploadProgress] = useState<number | undefined>(undefined);
+  const [uploadData, setUploadData] = useState<{
+    progress: number;
+    uploadedMB: number;
+    totalMB: number;
+    uploadType: 'standard' | 'chunked';
+  } | null>(null);
   const [archivePassword, setArchivePassword] = useState('');
   const [showUploadPage, setShowUploadPage] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
@@ -109,6 +115,7 @@ const Index = () => {
       chunkedUpload: API_URLS.chunkedUpload
     },
     onProgress: setExternalUploadProgress,
+    onUploadData: setUploadData,
     onLoadLeads: loadUserLeads
   });
 
@@ -175,6 +182,7 @@ const Index = () => {
     setShowUploadPage(false);
     setUploadComplete(false);
     setExternalUploadProgress(undefined);
+    setUploadData(null);
     setActiveTab('record');
   };
 
@@ -231,9 +239,12 @@ const Index = () => {
   if (showUploadPage) {
     return (
       <UploadPage
-        progress={externalUploadProgress ?? 0}
+        progress={uploadData?.progress ?? externalUploadProgress ?? 0}
         isComplete={uploadComplete}
         onNewLead={handleNewLead}
+        uploadedMB={uploadData?.uploadedMB ?? 0}
+        totalMB={uploadData?.totalMB ?? 0}
+        uploadType={uploadData?.uploadType ?? 'standard'}
       />
     );
   }

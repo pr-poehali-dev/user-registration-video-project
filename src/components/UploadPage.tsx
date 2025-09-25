@@ -7,9 +7,19 @@ interface UploadPageProps {
   progress: number;
   isComplete: boolean;
   onNewLead: () => void;
+  uploadedMB?: number;
+  totalMB?: number;
+  uploadType?: 'standard' | 'chunked';
 }
 
-const UploadPage: React.FC<UploadPageProps> = ({ progress, isComplete, onNewLead }) => {
+const UploadPage: React.FC<UploadPageProps> = ({ 
+  progress, 
+  isComplete, 
+  onNewLead, 
+  uploadedMB = 0, 
+  totalMB = 0, 
+  uploadType = 'standard' 
+}) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -37,8 +47,15 @@ const UploadPage: React.FC<UploadPageProps> = ({ progress, isComplete, onNewLead
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Прогресс загрузки</span>
-                  <span>{Math.round(progress)}%</span>
+                  <span>
+                    {uploadType === 'chunked' ? 'Многочастная загрузка' : 'Загрузка видео'}
+                  </span>
+                  <span>
+                    {totalMB > 0 ? 
+                      `${uploadedMB.toFixed(1)} / ${totalMB.toFixed(1)} МБ` : 
+                      `${Math.round(progress)}%`
+                    }
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div 
@@ -46,6 +63,14 @@ const UploadPage: React.FC<UploadPageProps> = ({ progress, isComplete, onNewLead
                     style={{ width: `${progress}%` }}
                   ></div>
                 </div>
+                {totalMB > 0 && (
+                  <div className="text-xs text-gray-500 text-center">
+                    {uploadType === 'chunked' ? 
+                      `Файл разбит на части по 5 МБ • Общий размер: ${totalMB.toFixed(1)} МБ` :
+                      `Размер файла: ${totalMB.toFixed(1)} МБ`
+                    }
+                  </div>
+                )}
               </div>
             </div>
           ) : (
