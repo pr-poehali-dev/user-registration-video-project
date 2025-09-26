@@ -3,6 +3,7 @@ import os
 from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import jwt
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -20,7 +21,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
             'body': ''
@@ -51,15 +52,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'user_id is required'})
         }
     
-    # Check admin authorization
+    # Check admin authorization - use same token as other admin functions
     headers = event.get('headers', {})
-    admin_token = headers.get('X-Admin-Token') or headers.get('x-admin-token')
+    auth_token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
     
-    if not admin_token or admin_token != os.environ.get('ADMIN_TOKEN', 'test-admin-token'):
+    if not auth_token:
         return {
-            'statusCode': 403,
+            'statusCode': 401,
             'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Unauthorized'})
+            'body': json.dumps({'error': 'Authentication token required'})
+        }
+    
+    # Verify JWT token and check admin role
+    jwt_secret = os.environ.get('JWT_SECRET', 'default-secret-change-in-production')
+    
+    try:
+        payload = jwt.decode(auth_token, jwt_secret, algorithms=['HS256'])
+        user_role = payload.get('role')
+        
+        if user_role != 'admin':
+            return {
+                'statusCode': 403,
+                'headers': {'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Admin access required'})
+            }
+    except jwt.InvalidTokenError:
+        return {
+            'statusCode': 401,
+            'headers': {'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Invalid authentication token'})
         }
     
     try:

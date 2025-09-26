@@ -9,20 +9,20 @@
       "bodyMatcher": "exact"
     },
     {
-      "name": "Delete user without admin token returns 403",
+      "name": "Delete user without auth token returns 401",
       "method": "DELETE",
       "path": "/",
       "body": {
         "user_id": "123"
       },
-      "expectedStatus": 403
+      "expectedStatus": 401
     },
     {
       "name": "Delete user without user_id returns 400",
       "method": "DELETE",
       "path": "/",
       "headers": {
-        "X-Admin-Token": "test-admin-token"
+        "X-Auth-Token": "invalid-token"
       },
       "body": {
         "user_id": ""

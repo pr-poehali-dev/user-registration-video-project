@@ -262,7 +262,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ token, adminApiUrl, videoApiUrl
       const response = await fetch(deleteUserApiUrl, {
         method: 'DELETE',
         headers: {
-          'X-Admin-Token': token,
+          'X-Auth-Token': token,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
