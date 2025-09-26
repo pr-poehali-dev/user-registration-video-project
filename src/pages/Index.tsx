@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { LeadFormData, VideoLead } from '@/types/lead';
 
 // Components
 import AuthForm from '@/components/AuthForm';
@@ -29,14 +30,7 @@ interface User {
   role?: string;
 }
 
-interface VideoLead {
-  id: string;
-  title: string;
-  comments: string;
-  video_url?: string;
-  created_at: string;
-  video_filename?: string;
-}
+
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -114,13 +108,13 @@ const Index = () => {
     onLoadLeads: loadUserLeads
   });
 
-  const handleSaveLead = async (videoBlob: Blob, comments: string) => {
+  const handleSaveLead = async (videoBlob: Blob, leadData: LeadFormData) => {
     setShowUploadPage(true);
     setUploadComplete(false);
     setLoading(true);
     
     try {
-      await uploadLead(videoBlob, comments);
+      await uploadLead(videoBlob, leadData);
       
       // Show success
       setUploadComplete(true);

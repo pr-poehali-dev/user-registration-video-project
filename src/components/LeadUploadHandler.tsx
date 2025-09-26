@@ -1,6 +1,7 @@
 import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ChunkedUploader } from '@/utils/chunkedUpload';
+import { LeadFormData } from '@/types/lead';
 
 interface LeadUploadHandlerProps {
   token: string;
@@ -20,7 +21,8 @@ export const useLeadUploadHandler = ({
 }: LeadUploadHandlerProps) => {
   const { toast } = useToast();
 
-  const handleChunkedUpload = async (videoBlob: Blob, comments: string): Promise<void> => {
+  const handleChunkedUpload = async (videoBlob: Blob, leadData: LeadFormData): Promise<void> => {
+    const comments = `Родитель: ${leadData.parentName}, Ребенок: ${leadData.childName}, Возраст: ${leadData.age}, Телефон: ${leadData.phone}`;
     const uploader = new ChunkedUploader({
       file: videoBlob,
       title: `Лид от ${new Date().toLocaleDateString('ru-RU')}`,
@@ -61,7 +63,7 @@ export const useLeadUploadHandler = ({
     await uploader.upload();
   };
 
-  const handleStandardUpload = async (videoBlob: Blob, comments: string): Promise<void> => {
+  const handleStandardUpload = async (videoBlob: Blob, leadData: LeadFormData): Promise<void> => {
     try {
       // Convert video blob to base64
       const reader = new FileReader();
@@ -91,6 +93,8 @@ export const useLeadUploadHandler = ({
           });
           throw new Error('Base64 conversion failed');
         }
+        
+        const comments = `Родитель: ${leadData.parentName}, Ребенок: ${leadData.childName}, Возраст: ${leadData.age}, Телефон: ${leadData.phone}`;
         
         console.log('Starting POST request to:', apiUrls.leads);
         console.log('Token length:', token.length);
@@ -206,17 +210,17 @@ export const useLeadUploadHandler = ({
     }
   };
 
-  const handleSaveLead = async (videoBlob: Blob, comments: string) => {
+  const handleSaveLead = async (videoBlob: Blob, leadData: LeadFormData) => {
     const videoSizeMB = videoBlob.size / (1024 * 1024);
     console.log('Video file size:', videoSizeMB.toFixed(2), 'MB');
     
     // Use chunked upload for files larger than 8MB
     if (videoSizeMB > 8) {
       console.log('Using chunked upload for large file');
-      await handleChunkedUpload(videoBlob, comments);
+      await handleChunkedUpload(videoBlob, leadData);
     } else {
       console.log('Using standard upload for small file');
-      await handleStandardUpload(videoBlob, comments);
+      await handleStandardUpload(videoBlob, leadData);
     }
   };
 

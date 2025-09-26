@@ -1,18 +1,26 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import { LeadFormData } from '@/types/lead';
 
 interface VideoRecorderProps {
-  onSaveLead: (videoBlob: Blob, comments: string) => Promise<void>;
+  onSaveLead: (videoBlob: Blob, leadData: LeadFormData) => Promise<void>;
   loading: boolean;
   externalUploadProgress?: number;
 }
 
 const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, externalUploadProgress }) => {
-  const [comments, setComments] = useState('');
+  const [leadData, setLeadData] = useState<LeadFormData>({
+    parentName: '',
+    childName: '',
+    age: '',
+    phone: ''
+  });
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [isRecording, setIsRecording] = useState(false);
@@ -48,7 +56,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
       }
 
       // Принудительно проверяем поддержку MP4 и используем только его
-      let options: MediaRecorderOptions = {
+      const options: MediaRecorderOptions = {
         videoBitsPerSecond: 300000,
         audioBitsPerSecond: 32000
       };
@@ -144,8 +152,15 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
     setIsRecording(false);
   };
 
+  const isFormValid = () => {
+    return leadData.parentName.trim() && 
+           leadData.childName.trim() && 
+           leadData.age.trim() && 
+           leadData.phone.trim();
+  };
+
   const handleSaveLead = async () => {
-    if (!videoBlob || !comments.trim()) {
+    if (!videoBlob || !isFormValid()) {
       return;
     }
 
@@ -172,7 +187,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
     }
 
     try {
-      await onSaveLead(videoBlob, comments);
+      await onSaveLead(videoBlob, leadData);
       
       // Complete progress for standard upload
       if (progressInterval) {
@@ -187,7 +202,12 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
-        setComments('');
+        setLeadData({
+          parentName: '',
+          childName: '',
+          age: '',
+          phone: ''
+        });
         retakeVideo();
       }, 500);
       
@@ -208,17 +228,64 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
         <CardHeader className="pb-3 sm:pb-6">
           <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Icon name="FileText" size={18} className="sm:w-5 sm:h-5" />
-            Комментарии к лиду
+            Информация о лиде
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4">
-          <Textarea
-            placeholder="Опишите детали лида, контактную информацию, особые заметки..."
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            rows={4}
-            className="resize-none text-sm sm:text-base min-h-[100px] sm:min-h-[120px]"
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="parentName" className="text-sm font-medium">
+                Имя родителя
+              </Label>
+              <Input
+                id="parentName"
+                placeholder="Введите имя родителя"
+                value={leadData.parentName}
+                onChange={(e) => setLeadData(prev => ({ ...prev, parentName: e.target.value }))}
+                className="text-sm sm:text-base"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="childName" className="text-sm font-medium">
+                Имя ребенка
+              </Label>
+              <Input
+                id="childName"
+                placeholder="Введите имя ребенка"
+                value={leadData.childName}
+                onChange={(e) => setLeadData(prev => ({ ...prev, childName: e.target.value }))}
+                className="text-sm sm:text-base"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="age" className="text-sm font-medium">
+                Возраст ребенка
+              </Label>
+              <Input
+                id="age"
+                placeholder="Введите возраст"
+                value={leadData.age}
+                onChange={(e) => setLeadData(prev => ({ ...prev, age: e.target.value }))}
+                className="text-sm sm:text-base"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-sm font-medium">
+                Телефон
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+7 (999) 123-45-67"
+                value={leadData.phone}
+                onChange={(e) => setLeadData(prev => ({ ...prev, phone: e.target.value }))}
+                className="text-sm sm:text-base"
+              />
+            </div>
+          </div>
           
           {/* Upload Progress Bar */}
           {isUploading && (
@@ -245,7 +312,7 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({ onSaveLead, loading, exte
           <Button 
             onClick={handleSaveLead} 
             className="w-full h-12 sm:h-10 text-base sm:text-sm font-medium touch-manipulation"
-            disabled={!videoBlob || !comments.trim() || loading || isUploading}
+            disabled={!videoBlob || !isFormValid() || loading || isUploading}
           >
             {loading || isUploading ? (
               <Icon name="Loader2" size={16} className="mr-2 animate-spin" />

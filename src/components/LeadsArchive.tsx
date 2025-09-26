@@ -2,15 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
-
-interface VideoLead {
-  id: string;
-  title: string;
-  comments: string;
-  video_url?: string;
-  created_at: string;
-  video_filename?: string;
-}
+import { VideoLead } from '@/types/lead';
 
 interface LeadsArchiveProps {
   videoLeads: VideoLead[];
@@ -107,15 +99,69 @@ const VideoLeadCard: React.FC<{
             )}
           </div>
           <div className="space-y-2 sm:space-y-3">
-            <h4 className="font-medium text-sm sm:text-base">Комментарии:</h4>
-            <div className="text-sm text-gray-600 bg-gray-50 p-3 sm:p-4 rounded-md whitespace-pre-wrap leading-relaxed max-h-40 sm:max-h-48 overflow-y-auto">
-              {lead.comments}
+            <h4 className="font-medium text-sm sm:text-base">Информация о лиде:</h4>
+            <div className="text-sm text-gray-600 bg-gray-50 p-3 sm:p-4 rounded-md leading-relaxed max-h-40 sm:max-h-48 overflow-y-auto">
+              <LeadInfo comments={lead.comments} />
             </div>
           </div>
         </div>
       </CardContent>
     </Card>
   );
+};
+
+// Component to display lead information in a structured way
+const LeadInfo: React.FC<{ comments: string }> = ({ comments }) => {
+  // Try to parse structured data from comments
+  const parseLeadData = (comments: string) => {
+    // Check if it's new structured format
+    if (comments.includes('Родитель:') && comments.includes('Ребенок:')) {
+      const parentMatch = comments.match(/Родитель:\s*([^,]+)/);
+      const childMatch = comments.match(/Ребенок:\s*([^,]+)/);
+      const ageMatch = comments.match(/Возраст:\s*([^,]+)/);
+      const phoneMatch = comments.match(/Телефон:\s*(.+)/);
+      
+      return {
+        parentName: parentMatch?.[1]?.trim() || '',
+        childName: childMatch?.[1]?.trim() || '',
+        age: ageMatch?.[1]?.trim() || '',
+        phone: phoneMatch?.[1]?.trim() || '',
+        isStructured: true
+      };
+    }
+    
+    // Old format - just display as is
+    return {
+      isStructured: false,
+      originalComments: comments
+    };
+  };
+
+  const leadData = parseLeadData(comments);
+
+  if (leadData.isStructured) {
+    return (
+      <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <span className="font-medium">Родитель:</span> {leadData.parentName}
+          </div>
+          <div>
+            <span className="font-medium">Ребенок:</span> {leadData.childName}
+          </div>
+          <div>
+            <span className="font-medium">Возраст:</span> {leadData.age}
+          </div>
+          <div>
+            <span className="font-medium">Телефон:</span> {leadData.phone}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback for old comments format
+  return <div className="whitespace-pre-wrap">{leadData.originalComments}</div>;
 };
 
 export default LeadsArchive;

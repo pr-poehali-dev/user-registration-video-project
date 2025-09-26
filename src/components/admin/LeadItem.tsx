@@ -49,7 +49,9 @@ const LeadItem: React.FC<LeadItemProps> = ({
           {lead.has_video ? 'Видео' : 'Текст'}
         </Badge>
       </div>
-      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{lead.comments}</p>
+      <div className="text-sm text-muted-foreground mb-3">
+        <LeadInfo comments={lead.comments} />
+      </div>
       
       {/* Mobile: Stack date and buttons vertically */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
@@ -132,6 +134,50 @@ const LeadItem: React.FC<LeadItemProps> = ({
       </div>
     </div>
   );
+};
+
+// Component to display lead information in a structured way
+const LeadInfo: React.FC<{ comments: string }> = ({ comments }) => {
+  // Try to parse structured data from comments
+  const parseLeadData = (comments: string) => {
+    // Check if it's new structured format
+    if (comments.includes('Родитель:') && comments.includes('Ребенок:')) {
+      const parentMatch = comments.match(/Родитель:\s*([^,]+)/);
+      const childMatch = comments.match(/Ребенок:\s*([^,]+)/);
+      const ageMatch = comments.match(/Возраст:\s*([^,]+)/);
+      const phoneMatch = comments.match(/Телефон:\s*(.+)/);
+      
+      return {
+        parentName: parentMatch?.[1]?.trim() || '',
+        childName: childMatch?.[1]?.trim() || '',
+        age: ageMatch?.[1]?.trim() || '',
+        phone: phoneMatch?.[1]?.trim() || '',
+        isStructured: true
+      };
+    }
+    
+    // Old format - just display as is
+    return {
+      isStructured: false,
+      originalComments: comments
+    };
+  };
+
+  const leadData = parseLeadData(comments);
+
+  if (leadData.isStructured) {
+    return (
+      <div className="space-y-1 text-xs sm:text-sm">
+        <div><span className="font-medium">Родитель:</span> {leadData.parentName}</div>
+        <div><span className="font-medium">Ребенок:</span> {leadData.childName}</div>
+        <div><span className="font-medium">Возраст:</span> {leadData.age}</div>
+        <div><span className="font-medium">Телефон:</span> {leadData.phone}</div>
+      </div>
+    );
+  }
+
+  // Fallback for old comments format
+  return <div className="line-clamp-2">{leadData.originalComments}</div>;
 };
 
 export default LeadItem;
