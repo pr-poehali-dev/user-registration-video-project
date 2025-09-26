@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎥 Комплексный тест загрузки видео</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
+        .browser-info { background: #e7f3ff; border: 1px solid #007acc; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        video { max-width: 300px; height: auto; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 12px 20px; margin: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        button.success { background: #28a745; }
+        button.danger { background: #dc3545; }
+        .progress { width: 100%; height: 25px; background: #f0f0f0; border-radius: 12px; overflow: hidden; margin: 10px 0; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, #007bff, #0056b3); transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .file-info { margin: 10px 0; font-size: 14px; color: #666; background: white; padding: 10px; border-radius: 4px; border: 1px solid #e0e0e0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .stats { background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 10px 0; }
+        .record-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .timer { font-size: 18px; font-weight: bold; color: #dc3545; }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #555; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+        .test-scenario { background: white; border-left: 4px solid #007bff; padding: 15px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Комплексный тест загрузки видео</h1>
+        
+        <div class="browser-info">
+            <h3>🌐 Информация о браузере</h3>
+            <strong>Браузер:</strong> <span id="browserInfo"></span><br>
+            <strong>Платформа:</strong> <span id="platformInfo"></span><br>
+            <strong>User Agent:</strong> <span id="userAgent" style="font-size: 12px; color: #666;"></span><br>
+            <strong>Поддержка MediaRecorder:</strong> <span id="mediaRecorderSupport"></span><br>
+            <strong>Поддерживаемые MIME типы:</strong> <span id="supportedMimeTypes"></span>
+        </div>
+
+        <div class="grid">
+            <div class="test-section">
+                <h2>📹 Запись видео</h2>
+                <video id="preview" muted autoplay></video>
+                <div class="record-controls">
+                    <button id="startRecord">🔴 Начать запись</button>
+                    <button id="stopRecord" disabled>⏹️ Остановить</button>
+                    <button id="recordShort">⚡ Записать 5 сек</button>
+                    <button id="recordLong">🎬 Записать 3 мин</button>
+                    <div class="timer" id="recordTimer">00:00</div>
+                </div>
+                <div id="recordingStatus" class="file-info"></div>
+            </div>
+
+            <div class="test-section">
+                <h2>📁 Загрузка файла</h2>
+                <input type="file" id="fileInput" accept="video/*">
+                <div id="fileInfo" class="file-info">Выберите видеофайл...</div>
+                <button id="generateSmallVideo">🔧 Создать маленький файл</button>
+                <button id="generateLargeVideo">🔧 Создать большой файл</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Тестовые сценарии</h2>
+            
+            <div class="test-scenario">
+                <h4>1️⃣ Короткие видео (&lt; 10 секунд, &lt; 8MB)</h4>
+                <button id="testShortChrome" class="test-btn" data-scenario="short">Chrome: тест коротких видео</button>
+                <button id="testShortSafari" class="test-btn" data-scenario="short">Safari: тест коротких видео</button>
+                <button id="testShortYandex" class="test-btn" data-scenario="short">Яндекс: тест коротких видео</button>
+            </div>
+
+            <div class="test-scenario">
+                <h4>2️⃣ Длинные видео (2-3 мин, 50+ MB)</h4>
+                <button id="testLongChrome" class="test-btn" data-scenario="long">Chrome: тест длинных видео</button>
+                <button id="testLongSafari" class="test-btn" data-scenario="long">Safari: тест длинных видео</button>
+                <button id="testLongYandex" class="test-btn" data-scenario="long">Яндекс: тест длинных видео</button>
+            </div>
+
+            <div class="test-scenario">
+                <h4>3️⃣ Администраторские функции</h4>
+                <button id="testAdminView">👤 Проверить админ-панель</button>
+                <button id="testVideoPlayback">▶️ Тест воспроизведения</button>
+            </div>
+            
+            <div class="progress" style="display: none;" id="progressContainer">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+            
+            <div class="stats" id="testStats" style="display: none;">
+                <strong>Статистика тестов:</strong>
+                <div id="statsContent"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 Результаты тестов</h2>
+            <button id="clearResults" class="danger">🗑️ Очистить результаты</button>
+            <button id="exportResults" class="success">💾 Экспорт результатов</button>
+            <div id="testResults"></div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let mediaRecorder;
+        let recordedChunks = [];
+        let stream;
+        let recordingTimer;
+        let recordingStartTime;
+        let testStats = { total: 0, passed: 0, failed: 0 };
+
+        // API URLs  
+        const API_URLS = {
+            leads: 'https://functions.poehali.dev/a119ce14-9a5b-40de-b18f-3ef1f6dc7484',
+            chunkedUpload: 'https://functions.poehali.dev/00f46d6e-5445-4f13-8032-e95041773736',
+            adminVideo: 'https://functions.poehali.dev/72f44b46-a11c-4ea3-addb-cb69aee5546e'
+        };
+
+        // Инициализация
+        window.addEventListener('load', () => {
+            initializeBrowserInfo();
+            setupEventListeners();
+            addTestResult('info', '🚀 Система тестирования загружена');
+        });
+
+        function initializeBrowserInfo() {
+            const browserInfo = getBrowserInfo();
+            document.getElementById('browserInfo').textContent = browserInfo.name + ' ' + browserInfo.version;
+            document.getElementById('platformInfo').textContent = navigator.platform;
+            document.getElementById('userAgent').textContent = navigator.userAgent;
+            document.getElementById('mediaRecorderSupport').textContent = typeof MediaRecorder !== 'undefined' ? '✅ Поддерживается' : '❌ Не поддерживается';
+            
+            // Проверка поддерживаемых MIME типов
+            const mimeTypes = ['video/webm', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8'];
+            const supported = mimeTypes.filter(type => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(type));
+            document.getElementById('supportedMimeTypes').textContent = supported.length > 0 ? supported.join(', ') : 'Нет поддерживаемых типов';
+        }
+
+        function setupEventListeners() {
+            // Запись видео
+            document.getElementById('startRecord').addEventListener('click', startRecording);
+            document.getElementById('stopRecord').addEventListener('click', stopRecording);
+            document.getElementById('recordShort').addEventListener('click', () => recordWithTimer(5));
+            document.getElementById('recordLong').addEventListener('click', () => recordWithTimer(180));
+            
+            // Загрузка файла
+            document.getElementById('fileInput').addEventListener('change', handleFileSelection);
+            document.getElementById('generateSmallVideo').addEventListener('click', () => generateTestVideo(5, 'small'));
+            document.getElementById('generateLargeVideo').addEventListener('click', () => generateTestVideo(180, 'large'));
+            
+            // Тестовые кнопки
+            document.querySelectorAll('.test-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => runTestScenario(e.target.dataset.scenario));
+            });
+            
+            // Админ функции
+            document.getElementById('testAdminView').addEventListener('click', testAdminPanel);
+            document.getElementById('testVideoPlayback').addEventListener('click', testVideoPlayback);
+            
+            // Утилиты
+            document.getElementById('clearResults').addEventListener('click', clearResults);
+            document.getElementById('exportResults').addEventListener('click', exportResults);
+        }
+
+        async function startRecording() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 }, 
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 30 }
+                    }, 
+                    audio: true 
+                });
+                
+                const preview = document.getElementById('preview');
+                preview.srcObject = stream;
+                
+                // Определяем лучший MIME тип
+                let mimeType = 'video/webm';
+                if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                    mimeType = 'video/webm;codecs=vp9';
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                    mimeType = 'video/webm;codecs=vp8';
+                }
+                
+                mediaRecorder = new MediaRecorder(stream, { mimeType });
+                recordedChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: mimeType });
+                    updateFileInfo('recordingStatus', blob, 'Записанное видео');
+                    stopTimer();
+                };
+                
+                mediaRecorder.start(1000); // Данные каждую секунду
+                startTimer();
+                
+                document.getElementById('startRecord').disabled = true;
+                document.getElementById('stopRecord').disabled = false;
+                
+                addTestResult('success', '🔴 Запись началась');
+                
+            } catch (error) {
+                addTestResult('error', '❌ Ошибка доступа к камере: ' + error.message);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                stream.getTracks().forEach(track => track.stop());
+                
+                document.getElementById('startRecord').disabled = false;
+                document.getElementById('stopRecord').disabled = true;
+                
+                addTestResult('success', '⏹️ Запись остановлена');
+            }
+        }
+
+        async function recordWithTimer(seconds) {
+            await startRecording();
+            setTimeout(() => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    stopRecording();
+                    addTestResult('info', `⏱️ Автоматическая остановка через ${seconds} секунд`);
+                }
+            }, seconds * 1000);
+        }
+
+        function startTimer() {
+            recordingStartTime = Date.now();
+            recordingTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('recordTimer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (recordingTimer) {
+                clearInterval(recordingTimer);
+                recordingTimer = null;
+            }
+        }
+
+        function handleFileSelection(event) {
+            const file = event.target.files[0];
+            if (file) {
+                updateFileInfo('fileInfo', file, 'Выбранный файл');
+                addTestResult('info', `📁 Файл выбран: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+            }
+        }
+
+        function updateFileInfo(elementId, file, label) {
+            const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+            const type = file.type || 'неизвестно';
+            
+            document.getElementById(elementId).innerHTML = `
+                <strong>${label}:</strong><br>
+                📁 <strong>Размер:</strong> ${sizeInMB} MB<br>
+                🎬 <strong>Тип:</strong> ${type}<br>
+                📅 <strong>Изменен:</strong> ${file.lastModified ? new Date(file.lastModified).toLocaleString() : 'неизвестно'}
+            `;
+        }
+
+        async function generateTestVideo(durationSec, size) {
+            addTestResult('info', `🎬 Генерация ${size === 'large' ? 'большого' : 'маленького'} тестового видео (${durationSec} сек)...`);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = size === 'large' ? 1280 : 640;
+            canvas.height = size === 'large' ? 720 : 480;
+            const ctx = canvas.getContext('2d');
+            
+            const fps = size === 'large' ? 30 : 15;
+            const stream = canvas.captureStream(fps);
+            const recorder = new MediaRecorder(stream, {
+                videoBitsPerSecond: size === 'large' ? 8000000 : 1000000 // 8Mbps или 1Mbps
+            });
+            
+            const chunks = [];
+            recorder.ondataavailable = (e) => chunks.push(e.data);
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                updateFileInfo('fileInfo', blob, `Сгенерированное ${size === 'large' ? 'большое' : 'маленькое'} видео`);
+                addTestResult('success', `✅ Тестовое видео сгенерировано: ${(blob.size / (1024 * 1024)).toFixed(2)} MB`);
+            };
+            
+            let frame = 0;
+            const totalFrames = durationSec * fps;
+            
+            const animate = () => {
+                // Создаем красочную анимацию
+                const progress = frame / totalFrames;
+                ctx.fillStyle = `hsl(${(frame * 2) % 360}, 70%, 50%)`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Добавляем движущиеся элементы
+                for (let i = 0; i < 10; i++) {
+                    ctx.fillStyle = `hsl(${(frame * 3 + i * 36) % 360}, 80%, 60%)`;
+                    const x = (Math.sin(frame * 0.1 + i) * canvas.width / 4) + canvas.width / 2;
+                    const y = (Math.cos(frame * 0.08 + i) * canvas.height / 4) + canvas.height / 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 20 + Math.sin(frame * 0.2) * 10, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Добавляем текст
+                ctx.fillStyle = 'white';
+                ctx.font = `${size === 'large' ? '48px' : '24px'} Arial`;
+                ctx.textAlign = 'center';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                const timeText = `${Math.floor(frame / fps)}s / ${durationSec}s`;
+                ctx.strokeText(timeText, canvas.width / 2, canvas.height / 2);
+                ctx.fillText(timeText, canvas.width / 2, canvas.height / 2);
+                
+                ctx.font = `${size === 'large' ? '24px' : '16px'} Arial`;
+                ctx.fillText(`${size.toUpperCase()} VIDEO TEST`, canvas.width / 2, canvas.height / 2 + 60);
+                
+                frame++;
+                if (frame < totalFrames) {
+                    requestAnimationFrame(animate);
+                } else {
+                    recorder.stop();
+                }
+            };
+            
+            recorder.start();
+            animate();
+        }
+
+        async function runTestScenario(scenario) {
+            const browserInfo = getBrowserInfo();
+            const startTime = Date.now();
+            
+            testStats.total++;
+            updateStats();
+            
+            // Получаем видео файл
+            let videoFile = getVideoFile();
+            if (!videoFile) {
+                addTestResult('error', '❌ Нет видео для тестирования. Запишите или выберите файл.');
+                testStats.failed++;
+                updateStats();
+                return;
+            }
+            
+            const sizeInMB = videoFile.size / (1024 * 1024);
+            const testName = `${scenario === 'short' ? 'Короткое' : 'Длинное'} видео в ${browserInfo.name}`;
+            
+            addTestResult('info', `🚀 Начинаю тест "${testName}" (${sizeInMB.toFixed(2)} MB)`);
+            
+            // Проверяем соответствие сценарию
+            if (scenario === 'short' && sizeInMB > 8) {
+                addTestResult('warning', '⚠️ Файл больше 8MB для теста коротких видео');
+            } else if (scenario === 'long' && sizeInMB < 50) {
+                addTestResult('warning', '⚠️ Файл меньше 50MB для теста длинных видео');
+            }
+            
+            document.getElementById('progressContainer').style.display = 'block';
+            updateProgress(0);
+
+            try {
+                const leadData = {
+                    parentName: `Тест ${browserInfo.name}`,
+                    childName: 'Тест Ребенок',
+                    age: '5',
+                    phone: '+7999888777'
+                };
+
+                if (sizeInMB > 8) {
+                    await testChunkedUpload(videoFile, leadData, testName);
+                } else {
+                    await testStandardUpload(videoFile, leadData, testName);
+                }
+
+                const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                addTestResult('success', `✅ ${testName} успешно загружен за ${duration} сек`);
+                testStats.passed++;
+
+            } catch (error) {
+                const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                addTestResult('error', `❌ ${testName} не удалось загрузить за ${duration} сек: ${error.message}`);
+                testStats.failed++;
+            } finally {
+                document.getElementById('progressContainer').style.display = 'none';
+                updateStats();
+            }
+        }
+
+        function getVideoFile() {
+            // Сначала проверяем загруженный файл
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                return fileInput.files[0];
+            }
+            
+            // Затем записанное видео
+            if (recordedChunks.length > 0) {
+                return new Blob(recordedChunks, { type: 'video/webm' });
+            }
+            
+            return null;
+        }
+
+        async function testStandardUpload(file, leadData, testName) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onloadend = async () => {
+                    try {
+                        const result = reader.result;
+                        const base64Video = result.split(',')[1];
+                        
+                        updateProgress(50);
+                        
+                        const response = await fetch(API_URLS.leads, {
+                            method: 'POST',
+                            headers: {
+                                'X-Auth-Token': 'test-token-for-upload-test',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                title: `${testName} тест от ${new Date().toLocaleDateString()}`,
+                                comments: `Родитель: ${leadData.parentName}, Ребенок: ${leadData.childName}, Возраст: ${leadData.age}, Телефон: ${leadData.phone}`,
+                                video_data: base64Video,
+                                video_filename: `test-${Date.now()}.mp4`,
+                                video_content_type: file.type
+                            })
+                        });
+
+                        updateProgress(100);
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            resolve(data);
+                        } else {
+                            const error = await response.json();
+                            reject(new Error(error.error || 'Upload failed'));
+                        }
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = () => reject(new Error('File reading failed'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function testChunkedUpload(file, leadData, testName) {
+            const chunkSize = 5 * 1024 * 1024; // 5MB
+            const totalChunks = Math.ceil(file.size / chunkSize);
+            const uploadId = 'test-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            
+            // Инициализация
+            const initResponse = await fetch(API_URLS.chunkedUpload, {
+                method: 'POST',
+                headers: {
+                    'X-Auth-Token': 'test-token-for-upload-test',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'start_upload',
+                    upload_id: uploadId,
+                    total_size: file.size,
+                    total_chunks: totalChunks,
+                    filename: `chunked-test-${Date.now()}.mp4`,
+                    title: `${testName} чанковая загрузка`,
+                    comments: `Родитель: ${leadData.parentName}, Ребенок: ${leadData.childName}, Возраст: ${leadData.age}, Телефон: ${leadData.phone}`
+                })
+            });
+            
+            if (!initResponse.ok) {
+                throw new Error('Chunked upload initialization failed');
+            }
+            
+            // Загрузка чанков
+            for (let i = 0; i < totalChunks; i++) {
+                const start = i * chunkSize;
+                const end = Math.min(start + chunkSize, file.size);
+                const chunk = file.slice(start, end);
+                
+                const base64Chunk = await blobToBase64(chunk);
+                
+                const chunkResponse = await fetch(API_URLS.chunkedUpload, {
+                    method: 'POST',
+                    headers: {
+                        'X-Auth-Token': 'test-token-for-upload-test',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'upload_chunk',
+                        upload_id: uploadId,
+                        chunk_index: i,
+                        chunk_data: base64Chunk
+                    })
+                });
+                
+                if (!chunkResponse.ok) {
+                    throw new Error(`Chunk ${i + 1} upload failed`);
+                }
+                
+                const progress = ((i + 1) / totalChunks) * 100;
+                updateProgress(progress);
+                
+                // Небольшая задержка между чанками
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const result = reader.result;
+                    const base64Data = result.split(',')[1];
+                    resolve(base64Data);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        async function testAdminPanel() {
+            addTestResult('info', '👤 Тестирование админ-панели...');
+            
+            try {
+                const response = await fetch(API_URLS.adminVideo + '?id=1', {
+                    method: 'GET',
+                    headers: {
+                        'X-Auth-Token': 'test-admin-token'
+                    }
+                });
+                
+                if (response.ok) {
+                    addTestResult('success', '✅ Админ-панель доступна');
+                } else {
+                    addTestResult('warning', '⚠️ Админ-панель требует валидную авторизацию');
+                }
+            } catch (error) {
+                addTestResult('error', '❌ Ошибка доступа к админ-панели: ' + error.message);
+            }
+        }
+
+        async function testVideoPlayback() {
+            addTestResult('info', '▶️ Тестирование воспроизведения видео...');
+            
+            const videoFile = getVideoFile();
+            if (!videoFile) {
+                addTestResult('error', '❌ Нет видео для тестирования воспроизведения');
+                return;
+            }
+            
+            try {
+                const videoUrl = URL.createObjectURL(videoFile);
+                const video = document.createElement('video');
+                video.src = videoUrl;
+                video.controls = true;
+                video.style.maxWidth = '300px';
+                
+                video.onloadedmetadata = () => {
+                    addTestResult('success', `✅ Видео загружено: ${video.duration.toFixed(1)}s, ${video.videoWidth}x${video.videoHeight}`);
+                };
+                
+                video.onerror = () => {
+                    addTestResult('error', '❌ Ошибка загрузки видео для воспроизведения');
+                };
+                
+                // Добавляем видео в результаты
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'test-result info';
+                resultDiv.innerHTML = `<strong>Тест воспроизведения:</strong><br>`;
+                resultDiv.appendChild(video);
+                document.getElementById('testResults').appendChild(resultDiv);
+                
+            } catch (error) {
+                addTestResult('error', '❌ Ошибка создания URL для видео: ' + error.message);
+            }
+        }
+
+        function updateProgress(percentage) {
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = Math.round(percentage) + '%';
+        }
+
+        function updateStats() {
+            const statsContainer = document.getElementById('testStats');
+            const statsContent = document.getElementById('statsContent');
+            
+            statsContent.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+                    <div>
+                        <div style="font-size: 24px; color: #007bff;">${testStats.total}</div>
+                        <div>Всего тестов</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; color: #28a745;">${testStats.passed}</div>
+                        <div>Успешно</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; color: #dc3545;">${testStats.failed}</div>
+                        <div>Ошибок</div>
+                    </div>
+                </div>
+            `;
+            
+            statsContainer.style.display = testStats.total > 0 ? 'block' : 'none';
+        }
+
+        function addTestResult(type, message) {
+            const results = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+            testStats = { total: 0, passed: 0, failed: 0 };
+            updateStats();
+            addTestResult('info', '🗑️ Результаты очищены');
+        }
+
+        function exportResults() {
+            const results = document.getElementById('testResults');
+            const browserInfo = getBrowserInfo();
+            
+            let exportText = `ОТЧЕТ О ТЕСТИРОВАНИИ ЗАГРУЗКИ ВИДЕО\n`;
+            exportText += `==============================================\n\n`;
+            exportText += `Браузер: ${browserInfo.name} ${browserInfo.version}\n`;
+            exportText += `Платформа: ${navigator.platform}\n`;
+            exportText += `Дата: ${new Date().toLocaleString()}\n`;
+            exportText += `Всего тестов: ${testStats.total}\n`;
+            exportText += `Успешно: ${testStats.passed}\n`;
+            exportText += `Ошибок: ${testStats.failed}\n\n`;
+            exportText += `ДЕТАЛЬНЫЕ РЕЗУЛЬТАТЫ:\n`;
+            exportText += `======================\n\n`;
+            
+            const resultElements = results.querySelectorAll('.test-result');
+            resultElements.forEach(element => {
+                exportText += element.textContent + '\n';
+            });
+            
+            const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `video-test-report-${browserInfo.name}-${new Date().toISOString().slice(0, 10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            addTestResult('success', '💾 Отчет экспортирован');
+        }
+
+        function getBrowserInfo() {
+            const ua = navigator.userAgent;
+            
+            if (ua.includes('Chrome') && !ua.includes('Edg') && !ua.includes('YaBrowser')) {
+                const match = ua.match(/Chrome\/(\d+)/);
+                return { name: 'Chrome', version: match ? match[1] : 'Unknown' };
+            } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+                const match = ua.match(/Version\/(\d+)/);
+                return { name: 'Safari', version: match ? match[1] : 'Unknown' };
+            } else if (ua.includes('YaBrowser')) {
+                const match = ua.match(/YaBrowser\/(\d+)/);
+                return { name: 'Yandex Browser', version: match ? match[1] : 'Unknown' };
+            } else if (ua.includes('Edg')) {
+                const match = ua.match(/Edg\/(\d+)/);
+                return { name: 'Edge', version: match ? match[1] : 'Unknown' };
+            } else if (ua.includes('Firefox')) {
+                const match = ua.match(/Firefox\/(\d+)/);
+                return { name: 'Firefox', version: match ? match[1] : 'Unknown' };
+            }
+            
+            return { name: 'Unknown', version: 'Unknown' };
+        }
+    </script>
+</body>
+</html>
