@@ -17,7 +17,8 @@ const API_URLS = {
   video: 'https://functions.poehali.dev/75e3022c-965a-4cd9-b5c1-bd179806e509',
   admin: 'https://functions.poehali.dev/bf64fc6c-c075-4df6-beb9-f5b527586fa1',
   adminVideo: 'https://functions.poehali.dev/72f44b46-a11c-4ea3-addb-cb69aee5546e',
-  chunkedUpload: 'https://functions.poehali.dev/00f46d6e-5445-4f13-8032-e95041773736'
+  chunkedUpload: 'https://functions.poehali.dev/00f46d6e-5445-4f13-8032-e95041773736',
+  deleteUser: 'https://functions.poehali.dev/d99ce676-54d7-46f7-8738-a2dd9264061e'
 };
 
 interface User {
@@ -222,6 +223,7 @@ const Index = () => {
           token={token}
           adminApiUrl={API_URLS.admin}
           videoApiUrl={API_URLS.adminVideo}
+          deleteUserApiUrl={API_URLS.deleteUser}
         />
       </div>
     );

@@ -1,7 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import Icon from '@/components/ui/icon';
 
 interface Lead {
@@ -26,6 +37,8 @@ interface UsersListProps {
   selectedUser: User | null;
   onSelectUser: (user: User) => void;
   onDownloadAllUserVideos: (user: User) => void;
+  onDeleteUser: (userId: string, userName: string) => void;
+  deletingUserId: string | null;
   formatDate: (dateString: string) => string;
 }
 
@@ -34,6 +47,8 @@ const UsersList: React.FC<UsersListProps> = ({
   selectedUser,
   onSelectUser,
   onDownloadAllUserVideos,
+  onDeleteUser,
+  deletingUserId,
   formatDate
 }) => {
   return (
@@ -66,19 +81,64 @@ const UsersList: React.FC<UsersListProps> = ({
                   <Badge variant="secondary">
                     {user.leads.length} лидов
                   </Badge>
-                  {user.leads.filter(l => l.has_video).length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDownloadAllUserVideos(user);
-                      }}
-                    >
-                      <Icon name="Download" size={12} className="mr-1" />
-                      {user.leads.filter(l => l.has_video).length} видео
-                    </Button>
-                  )}
+                  <div className="flex gap-1">
+                    {user.leads.filter(l => l.has_video).length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDownloadAllUserVideos(user);
+                        }}
+                      >
+                        <Icon name="Download" size={12} className="mr-1" />
+                        {user.leads.filter(l => l.has_video).length} видео
+                      </Button>
+                    )}
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={deletingUserId === user.id}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {deletingUserId === user.id ? (
+                            <Icon name="Loader2" size={12} className="animate-spin" />
+                          ) : (
+                            <Icon name="Trash2" size={12} />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Удалить пользователя?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Вы уверены, что хотите удалить пользователя <strong>{user.name}</strong> ({user.email})?
+                            <br /><br />
+                            <span className="text-destructive">
+                              ⚠️ Это действие удалит:
+                              <br />• Учетную запись пользователя
+                              <br />• Все его лиды ({user.leads.length} шт.)
+                              <br />• Все связанные видеозаписи
+                            </span>
+                            <br /><br />
+                            Это действие нельзя отменить.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Отмена</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => onDeleteUser(user.id, user.name)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Удалить пользователя
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </div>
             </div>
