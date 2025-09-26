@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -52,6 +53,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'user_id is required'})
         }
     
+    # Validate user_id format (should be UUID or integer)
+    if not re.match(r'^[a-f0-9\-]+$|^\d+$', str(user_id)):
+        return {
+            'statusCode': 400,
+            'headers': {'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Invalid user_id format'})
+        }
+    
     # Check admin authorization - use same token as other admin functions
     headers = event.get('headers', {})
     auth_token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
@@ -89,8 +98,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(database_url)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        # First, check if user exists
-        cursor.execute("SELECT id, name, email FROM users WHERE id = %s", (user_id,))
+        # First, check if user exists (using simple query protocol)
+        cursor.execute(f"SELECT id, name, email FROM t_p72874800_user_registration_vi.users WHERE id = {user_id}")
         user = cursor.fetchone()
         
         if not user:
@@ -101,16 +110,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         # Delete all related data in correct order (foreign key dependencies)
-        # Delete leads first
-        cursor.execute("DELETE FROM leads WHERE user_id = %s", (user_id,))
+        # Delete video_leads first
+        cursor.execute(f"DELETE FROM t_p72874800_user_registration_vi.video_leads WHERE user_id = {user_id}")
         leads_deleted = cursor.rowcount
         
-        # Delete user sessions/tokens if they exist
-        cursor.execute("DELETE FROM user_sessions WHERE user_id = %s", (user_id,))
-        sessions_deleted = cursor.rowcount
+        # Delete chunked uploads if they exist
+        cursor.execute(f"DELETE FROM t_p72874800_user_registration_vi.upload_chunks WHERE upload_id IN (SELECT id FROM t_p72874800_user_registration_vi.chunked_uploads WHERE user_id = {user_id})")
+        chunks_deleted = cursor.rowcount
+        
+        cursor.execute(f"DELETE FROM t_p72874800_user_registration_vi.chunked_uploads WHERE user_id = {user_id}")
+        uploads_deleted = cursor.rowcount
         
         # Finally delete the user
-        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        cursor.execute(f"DELETE FROM t_p72874800_user_registration_vi.users WHERE id = {user_id}")
         
         # Commit all changes
         conn.commit()
@@ -121,7 +133,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'deleted_data': {
                 'user_id': user_id,
                 'leads_deleted': leads_deleted,
-                'sessions_deleted': sessions_deleted
+                'chunks_deleted': chunks_deleted,
+                'uploads_deleted': uploads_deleted
             }
         }
         
