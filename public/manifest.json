@@ -1,0 +1,117 @@
+{
+  "name": "IMPERIA PROMO - Видео заявки",
+  "short_name": "IMPERIA PROMO",
+  "description": "Приложение для создания и управления видео заявками от родителей",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "ru",
+  "scope": "/",
+  "id": "imperia-promo-video-app",
+  "icons": [
+    {
+      "src": "/img/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/img/icon-96x96.png",
+      "sizes": "96x96", 
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/img/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/img/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/img/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/img/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/img/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/img/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/img/screenshot-mobile-1.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Главный экран записи видео"
+    },
+    {
+      "src": "/img/screenshot-mobile-2.png", 
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Архив видео заявок"
+    }
+  ],
+  "features": [
+    "camera",
+    "microphone",
+    "storage"
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Записать видео",
+      "short_name": "Запись",
+      "description": "Быстро начать запись нового видео",
+      "url": "/?tab=record",
+      "icons": [
+        {
+          "src": "/img/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Мои записи",
+      "short_name": "Архив",
+      "description": "Просмотреть сохраненные видео",
+      "url": "/?tab=archive",
+      "icons": [
+        {
+          "src": "/img/icon-96x96.png",
+          "sizes": "96x96", 
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
