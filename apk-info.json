@@ -1,0 +1,162 @@
+{
+  "app": {
+    "name": "IMPERIA PROMO",
+    "displayName": "IMPERIA PROMO - Видео заявки",
+    "version": "1.0.0",
+    "packageId": "com.imperiapromo.videoapp",
+    "buildDate": "2025-09-27",
+    "description": "Профессиональное мобильное приложение для записи и отправки видео заявок",
+    "category": "Business & Productivity"
+  },
+  "build": {
+    "framework": "React + TypeScript + Capacitor",
+    "targetPlatform": "Android",
+    "minimumVersion": "Android 7.0 (API 24)",
+    "targetVersion": "Android 14 (API 34)",
+    "architecture": ["arm64-v8a", "armeabi-v7a"],
+    "buildType": "debug",
+    "signingConfig": "debug"
+  },
+  "features": {
+    "core": [
+      "Нативная запись видео высокого качества (HD/4K)",
+      "Фоновая загрузка файлов на сервер",
+      "Офлайн сохранение и синхронизация",
+      "Push уведомления",
+      "Интеграция с галереей устройства",
+      "Автоматическое сжатие видео"
+    ],
+    "camera": [
+      "Доступ к передней и задней камерам",
+      "Запись с автофокусом и стабилизацией",
+      "Контроль качества записи",
+      "Управление вспышкой",
+      "Предварительный просмотр"
+    ],
+    "storage": [
+      "Локальное сохранение видеофайлов",
+      "Автоматическая очистка временных файлов",
+      "Резервное копирование в облако",
+      "Управление свободным местом"
+    ],
+    "network": [
+      "Умная загрузка по Wi-Fi/мобильным данным",
+      "Возобновление прерванной загрузки",
+      "Сжатие данных для экономии трафика",
+      "Офлайн режим работы"
+    ]
+  },
+  "permissions": {
+    "required": [
+      {
+        "name": "CAMERA",
+        "description": "Доступ к камере для записи видео",
+        "critical": true
+      },
+      {
+        "name": "RECORD_AUDIO", 
+        "description": "Запись звука для видео",
+        "critical": true
+      },
+      {
+        "name": "WRITE_EXTERNAL_STORAGE",
+        "description": "Сохранение видеофайлов",
+        "critical": true
+      },
+      {
+        "name": "INTERNET",
+        "description": "Отправка видео на сервер",
+        "critical": true
+      }
+    ],
+    "optional": [
+      {
+        "name": "ACCESS_FINE_LOCATION",
+        "description": "Геометки для видео",
+        "critical": false
+      },
+      {
+        "name": "VIBRATE",
+        "description": "Тактильные уведомления",
+        "critical": false
+      }
+    ]
+  },
+  "systemRequirements": {
+    "os": "Android 7.0+",
+    "ram": "2 GB (минимум), 4 GB (рекомендуется)",
+    "storage": "100 MB свободного места",
+    "camera": "Обязательно",
+    "microphone": "Обязательно",
+    "internet": "Wi-Fi или мобильные данные"
+  },
+  "security": {
+    "encryption": "AES-256 для локальных файлов",
+    "transmission": "HTTPS/TLS 1.3",
+    "authentication": "JWT токены",
+    "permissions": "Runtime permissions Android 6.0+",
+    "privacy": "GDPR совместимость"
+  },
+  "installation": {
+    "methods": [
+      "Прямая установка APK файла",
+      "Google Play Store (после публикации)",
+      "Корпоративные магазины приложений"
+    ],
+    "steps": [
+      "Включить 'Неизвестные источники' в настройках Android",
+      "Скачать APK файл",
+      "Открыть файл и нажать 'Установить'",
+      "Предоставить необходимые разрешения",
+      "Запустить приложение"
+    ]
+  },
+  "development": {
+    "sourceCode": "React TypeScript компоненты",
+    "nativeIntegration": "Capacitor плагины",
+    "buildSystem": "Gradle + Android SDK",
+    "testing": "Jest + Capacitor тесты",
+    "deployment": "Android Studio / Capacitor CLI"
+  },
+  "comparison": {
+    "pwa_vs_native": {
+      "pwa": {
+        "advantages": [
+          "Быстрое развертывание",
+          "Кроссплатформенность", 
+          "Автообновления",
+          "Меньше ограничений сторов"
+        ],
+        "limitations": [
+          "Ограниченный доступ к камере",
+          "Размер файлов до 50MB",
+          "Зависимость от браузера"
+        ]
+      },
+      "native": {
+        "advantages": [
+          "Полный доступ к камере HD/4K",
+          "Неограниченный размер файлов",
+          "Фоновая работа",
+          "Лучшая производительность"
+        ],
+        "limitations": [
+          "Нужна публикация в сторе",
+          "Отдельная сборка для платформ",
+          "Более сложное обновление"
+        ]
+      }
+    }
+  },
+  "urls": {
+    "download": "/download-apk.html",
+    "testPage": "/comprehensive-video-test.html",
+    "iconGenerator": "/create-app-icons.html",
+    "webVersion": "/"
+  },
+  "contact": {
+    "developer": "poehali.dev",
+    "support": "Встроенная система обратной связи",
+    "documentation": "Интегрированная справка"
+  }
+}
