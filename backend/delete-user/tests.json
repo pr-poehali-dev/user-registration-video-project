@@ -28,6 +28,16 @@
         "user_id": ""
       },
       "expectedStatus": 400
+    },
+    {
+      "name": "Edit user without auth token returns 401",
+      "method": "PUT",
+      "path": "/",
+      "body": {
+        "user_id": "123",
+        "new_name": "New Name"
+      },
+      "expectedStatus": 401
     }
   ]
 }

@@ -38,7 +38,9 @@ interface UsersListProps {
   onSelectUser: (user: User) => void;
   onDownloadAllUserVideos: (user: User) => void;
   onDeleteUser: (userId: string, userName: string) => void;
+  onEditUser: (userId: string, currentName: string) => void;
   deletingUserId: string | null;
+  editingUserId: string | null;
   formatDate: (dateString: string) => string;
 }
 
@@ -48,7 +50,9 @@ const UsersList: React.FC<UsersListProps> = ({
   onSelectUser,
   onDownloadAllUserVideos,
   onDeleteUser,
+  onEditUser,
   deletingUserId,
+  editingUserId,
   formatDate
 }) => {
   return (
@@ -95,6 +99,22 @@ const UsersList: React.FC<UsersListProps> = ({
                         {user.leads.filter(l => l.has_video).length} видео
                       </Button>
                     )}
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={editingUserId === user.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditUser(user.id, user.name);
+                      }}
+                    >
+                      {editingUserId === user.id ? (
+                        <Icon name="Loader2" size={12} className="animate-spin" />
+                      ) : (
+                        <Icon name="Edit" size={12} />
+                      )}
+                    </Button>
                     
                     <AlertDialog>
                       <AlertDialogTrigger asChild>

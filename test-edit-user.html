@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Edit User</title>
+</head>
+<body>
+    <h1>Test User Edit Function</h1>
+    <button onclick="testEditUser()">Изменить Ольга -> Ольга Картункова</button>
+    <div id="result"></div>
+    
+    <script>
+    async function testEditUser() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = 'Отправка запроса...';
+        
+        try {
+            const response = await fetch('https://functions.poehali.dev/d99ce676-54d7-46f7-8738-a2dd9264061e', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Auth-Token': 'test-token' // Неважно, просто для теста
+                },
+                body: JSON.stringify({
+                    user_id: '10',
+                    new_name: 'Ольга Картункова'
+                })
+            });
+            
+            const data = await response.json();
+            resultDiv.innerHTML = `
+                <h3>Результат:</h3>
+                <p>Статус: ${response.status}</p>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        } catch (error) {
+            resultDiv.innerHTML = `Ошибка: ${error.message}`;
+        }
+    }
+    </script>
+</body>
+</html>

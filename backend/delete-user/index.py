@@ -8,8 +8,8 @@ import jwt
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Admin endpoint to delete user accounts and all related data
-    Args: event - HTTP request with user_id in body
+    Business: Admin endpoint to delete and edit user accounts
+    Args: event - HTTP request with user_id in body (DELETE) or user_id + new_name (PUT)
           context - execution context
     Returns: Success/error response
     '''
@@ -21,14 +21,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
+                'Access-Control-Allow-Methods': 'DELETE, PUT, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
             'body': ''
         }
     
-    if method != 'DELETE':
+    if method not in ['DELETE', 'PUT']:
         return {
             'statusCode': 405,
             'headers': {'Access-Control-Allow-Origin': '*'},
@@ -95,7 +95,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         # Connect to database
         database_url = os.environ.get('DATABASE_URL')
-        print(f"Connecting to database for user_id: {user_id}")
+        print(f"Connecting to database for user_id: {user_id}, method: {method}")
         conn = psycopg2.connect(database_url)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         print("Database connection established")
@@ -112,6 +112,55 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'statusCode': 404,
                 'headers': {'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({'error': 'User not found'})
+            }
+        
+        # Handle PUT request (edit user)
+        if method == 'PUT':
+            new_name = body_data.get('new_name', '').strip()
+            
+            if not new_name:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'new_name is required'})
+                }
+            
+            if len(new_name) < 1 or len(new_name) > 255:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Name must be between 1 and 255 characters'})
+                }
+            
+            # Update user name
+            old_name = user['name']
+            escaped_name = new_name.replace("'", "''")  # Escape single quotes for SQL
+            update_query = f"UPDATE t_p72874800_user_registration_vi.users SET name = '{escaped_name}', updated_at = CURRENT_TIMESTAMP WHERE id = {user_id}"
+            print(f"Executing update: {update_query}")
+            cursor.execute(update_query)
+            
+            # Commit changes
+            conn.commit()
+            print("User name updated successfully")
+            
+            result = {
+                'success': True,
+                'message': f'User name updated from "{old_name}" to "{new_name}"',
+                'user': {
+                    'id': user_id,
+                    'name': new_name,
+                    'email': user['email'],
+                    'old_name': old_name
+                }
+            }
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/json'
+                },
+                'body': json.dumps(result)
             }
         
         # Delete all related data in correct order (foreign key dependencies)
