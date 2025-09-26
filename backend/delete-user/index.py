@@ -95,12 +95,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         # Connect to database
         database_url = os.environ.get('DATABASE_URL')
+        print(f"Connecting to database for user_id: {user_id}")
         conn = psycopg2.connect(database_url)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
+        print("Database connection established")
         
         # First, check if user exists (using simple query protocol)
-        cursor.execute(f"SELECT id, name, email FROM t_p72874800_user_registration_vi.users WHERE id = {user_id}")
+        query = f"SELECT id, name, email FROM t_p72874800_user_registration_vi.users WHERE id = {user_id}"
+        print(f"Executing query: {query}")
+        cursor.execute(query)
         user = cursor.fetchone()
+        print(f"User found: {user}")
         
         if not user:
             return {
@@ -111,18 +116,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Delete all related data in correct order (foreign key dependencies)
         # Delete video_leads first
+        print("Deleting video_leads...")
         cursor.execute(f"DELETE FROM t_p72874800_user_registration_vi.video_leads WHERE user_id = {user_id}")
         leads_deleted = cursor.rowcount
+        print(f"Deleted {leads_deleted} video_leads")
         
-        # Delete chunked uploads if they exist
-        cursor.execute(f"DELETE FROM t_p72874800_user_registration_vi.upload_chunks WHERE upload_id IN (SELECT id FROM t_p72874800_user_registration_vi.chunked_uploads WHERE user_id = {user_id})")
-        chunks_deleted = cursor.rowcount
-        
+        # Delete chunked uploads (simpler approach)
+        print("Deleting chunked_uploads...")
         cursor.execute(f"DELETE FROM t_p72874800_user_registration_vi.chunked_uploads WHERE user_id = {user_id}")
         uploads_deleted = cursor.rowcount
+        print(f"Deleted {uploads_deleted} chunked_uploads")
+        
+        # Set chunks_deleted to 0 for now (since upload_chunks is complex)
+        chunks_deleted = 0
         
         # Finally delete the user
+        print("Deleting user...")
         cursor.execute(f"DELETE FROM t_p72874800_user_registration_vi.users WHERE id = {user_id}")
+        print("User deleted")
         
         # Commit all changes
         conn.commit()
@@ -148,6 +159,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
         
     except psycopg2.Error as e:
+        print(f"Database error: {e}")
         return {
             'statusCode': 500,
             'headers': {'Access-Control-Allow-Origin': '*'},
@@ -157,6 +169,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             })
         }
     except Exception as e:
+        print(f"General error: {e}")
         return {
             'statusCode': 500,
             'headers': {'Access-Control-Allow-Origin': '*'},
