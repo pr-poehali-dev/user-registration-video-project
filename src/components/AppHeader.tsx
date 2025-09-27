@@ -28,11 +28,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout }) => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => window.open('/download-apk.html', '_blank')}
-            className="h-8 px-2 sm:h-9 sm:px-3 bg-green-50 border-green-200 hover:bg-green-100 text-green-700"
+            onClick={() => window.open('/github-apk-activation.html', '_blank')}
+            className="h-8 px-2 sm:h-9 sm:px-3 bg-purple-50 border-purple-200 hover:bg-purple-100 text-purple-700"
           >
-            <Icon name="Smartphone" size={14} className="sm:w-4 sm:h-4 sm:mr-2" />
-            <span className="hidden sm:inline">APK</span>
+            <Icon name="Github" size={14} className="sm:w-4 sm:h-4 sm:mr-2" />
+            <span className="hidden sm:inline">GitHub</span>
           </Button>
           <Button variant="outline" size="sm" onClick={onLogout} className="h-8 px-2 sm:h-9 sm:px-3">
             <Icon name="LogOut" size={14} className="sm:w-4 sm:h-4 sm:mr-2" />
